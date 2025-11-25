@@ -1,0 +1,308 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  super_admin
+  customer_admin
+  customer_tech
+  service_tech
+}
+
+enum PricingTier {
+  basic
+  standard
+  mega
+}
+
+enum TicketStatus {
+  open
+  assigned
+  in_progress
+  on_hold
+  resolved
+  closed
+}
+
+enum TicketPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum SessionType {
+  remote_support
+  video_call
+  research
+  documentation
+}
+
+enum InvoiceStatus {
+  draft
+  sent
+  paid
+  overdue
+  cancelled
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  passwordHash      String
+  name              String
+  role              UserRole
+  companyId         String?
+  company           Company? @relation(fields: [companyId], references: [id])
+  twoFactorSecret   String?
+  twoFactorEnabled  Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  createdTickets    Ticket[] @relation("CreatedBy")
+  assignedTickets   Ticket[] @relation("AssignedTo")
+  sessions          Session[]
+  attachments       Attachment[]
+  comments          Comment[]
+
+  @@index([email])
+  @@index([companyId])
+}
+
+model Company {
+  id                      String       @id @default(cuid())
+  name                    String
+  hubspotId               String?       @unique
+  pricingTier             PricingTier   @default(basic)
+  pricePerMachine         Decimal       @default(40)
+  hourlyRate              Decimal       @default(180)
+  currentMonthUsageHours  Decimal       @default(0)
+  currentMonthUsageCost   Decimal       @default(0)
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  // Relations
+  users                   User[]
+  sites                   Site[]
+  tickets                 Ticket[]
+  invoices                Invoice[]
+
+  @@index([hubspotId])
+}
+
+model Site {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?
+  timezone    String   @default("America/New_York")
+  contactName String?
+  contactPhone String?
+  contactEmail String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  machines    Machine[]
+  tickets     Ticket[]
+  floorMaps   FloorMap[]
+
+  @@index([companyId])
+}
+
+model Machine {
+  id                  String   @id @default(cuid())
+  siteId              String
+  site                Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  name                String
+  model               String?
+  series              String?
+  serialNumber        String?
+  windowsVersion      String?
+  directConnectVersion String?
+  firmwareVersion     String?
+  configuration       Json?    // Scanning, feeders, stations, etc.
+  status              String?
+  isCurrentlyDown     Boolean  @default(false)
+  hasRemoteAccess     Boolean  @default(false)
+  remoteAccessType    String?
+  remoteAccessId      String?
+  floorMapId          String?
+  positionX           Float?
+  positionY           Float?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  alarms              MachineAlarm[]
+  tickets             Ticket[]
+
+  @@index([siteId])
+  @@index([serialNumber])
+}
+
+model MachineAlarm {
+  id              String   @id @default(cuid())
+  machineId       String
+  machine         Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  alarmCode       String
+  alarmDescription String?
+  occurrenceDate  DateTime @default(now())
+  resolvedDate    DateTime?
+  resolution      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([machineId])
+  @@index([alarmCode])
+}
+
+model Ticket {
+  id            String        @id @default(cuid())
+  ticketNumber  String        @unique
+  hubspotId     String?       @unique
+  companyId     String
+  company       Company       @relation(fields: [companyId], references: [id])
+  siteId        String
+  site          Site          @relation(fields: [siteId], references: [id])
+  machineId     String?
+  machine       Machine?      @relation(fields: [machineId], references: [id])
+  createdById   String
+  createdBy     User          @relation("CreatedBy", fields: [createdById], references: [id])
+  assignedToId  String?
+  assignedTo    User?         @relation("AssignedTo", fields: [assignedToId], references: [id])
+  subject       String
+  description   String?
+  priority      TicketPriority @default(medium)
+  status        TicketStatus  @default(open)
+  machineDown   Boolean       @default(false)
+  totalMinutes  Int           @default(0)
+  totalCost     Decimal       @default(0)
+  createdAt     DateTime      @default(now())
+  assignedAt    DateTime?
+  startedAt     DateTime?
+  resolvedAt    DateTime?
+  closedAt      DateTime?
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  sessions      Session[]
+  attachments   Attachment[]
+  comments      Comment[]
+
+  @@index([companyId])
+  @@index([siteId])
+  @@index([machineId])
+  @@index([status])
+  @@index([createdById])
+  @@index([assignedToId])
+  @@index([ticketNumber])
+}
+
+model Session {
+  id                String      @id @default(cuid())
+  ticketId          String
+  ticket            Ticket      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  techId            String
+  tech              User        @relation(fields: [techId], references: [id])
+  sessionType       SessionType
+  startTime         DateTime
+  endTime           DateTime?
+  durationMinutes   Int?
+  rateType          String?     // "business", "after_hours", "weekend"
+  rateAmount        Decimal?
+  rateMultiplier    Decimal     @default(1)
+  cost              Decimal?
+  videoRecordingUrl String?
+  notes             String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([ticketId])
+  @@index([techId])
+}
+
+model Attachment {
+  id          String   @id @default(cuid())
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fileName    String
+  fileUrl     String
+  fileType    String
+  fileSize    Int
+  uploadedById String
+  uploadedBy  User     @relation(fields: [uploadedById], references: [id])
+  uploadedAt  DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  authorName  String
+  content     String
+  isInternal  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([authorId])
+}
+
+model Invoice {
+  id                  String        @id @default(cuid())
+  companyId           String
+  company             Company       @relation(fields: [companyId], references: [id])
+  invoiceNumber       String        @unique
+  billingPeriod       String        // "2024-01" format
+  machineCount        Int
+  subscriptionFee     Decimal
+  usageHours          Decimal
+  usageFee            Decimal
+  escalationFees      Decimal       @default(0)
+  travelExpenses      Decimal       @default(0)
+  totalAmount         Decimal
+  status              InvoiceStatus @default(draft)
+  paidDate            DateTime?
+  quickbooksInvoiceId String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@index([companyId])
+  @@index([invoiceNumber])
+  @@index([billingPeriod])
+}
+
+model FloorMap {
+  id        String   @id @default(cuid())
+  siteId    String
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  name      String
+  imageUrl  String
+  width     Int
+  height    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siteId])
+}
+
+
