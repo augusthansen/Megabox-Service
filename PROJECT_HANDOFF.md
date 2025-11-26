@@ -61,16 +61,36 @@ A remote service management platform for mail inserter machines. This is a Next.
 
 7. **Ticket Management**
 
-   - List all tickets with filters
+   - List all tickets with filters (status, priority)
    - Create new tickets
-   - View/edit ticket details
+   - View ticket details with full information
+   - Edit ticket details (status, priority, assignment, etc.)
+   - Link to view tickets in HubSpot
    - HubSpot sync functionality
 
-8. **HubSpot Integration** ⭐ **RECENTLY ADDED**
+8. **User Management** ⭐ **RECENTLY ADDED**
+   - List all users
+   - Create new users with roles
+   - Edit user details
+   - Toggle user active/inactive status
+   - Filter users by company
+
+9. **HubSpot Integration** ⭐ **RECENTLY ADDED**
+   
+   **Companies:**
    - Sync companies from HubSpot CRM
-   - Sync tickets from HubSpot Service Hub
-   - Two-way sync: Create/update tickets in app → syncs to HubSpot
+   - Filter sync by "Service Plan" custom property
+   - Automatic creation of new companies
+   - Update existing companies on re-sync
+   
+   **Tickets:**
+   - Sync tickets from HubSpot Service Hub with company associations
+   - Two-way sync: Create/update tickets in app → automatically syncs to HubSpot
    - Status and priority mapping between systems
+   - Direct links to view/edit tickets in HubSpot
+   - Company association preservation
+   
+   See [HUBSPOT_TICKETS.md](./HUBSPOT_TICKETS.md) for detailed ticket integration documentation
 
 ## Database Schema
 

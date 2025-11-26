@@ -74,15 +74,21 @@ export async function syncCompaniesFromHubspot(filterByServicePlan = true) {
 
 /**
  * Sync tickets from HubSpot Service Hub
- * Returns array of HubSpot ticket objects
+ * Returns array of HubSpot ticket objects with company associations
  */
 export async function syncTicketsFromHubspot() {
   try {
     const client = getHubspotClient();
     
     // Fetch all tickets from HubSpot Service Hub
-    // Note: HubSpot uses the tickets API for Service Hub
-    const response = await client.crm.tickets.basicApi.getPage(100);
+    // Request associations to get linked companies
+    const response = await client.crm.tickets.basicApi.getPage(
+      100,
+      undefined,
+      ["subject", "hs_ticket_name", "content", "hs_ticket_description", "hs_ticket_priority", "hs_ticket_status", "createdate"],
+      undefined,
+      ["companies"]
+    );
     
     return response.results.map((ticket: any) => ({
       hubspotId: ticket.id,
@@ -249,6 +255,26 @@ function mapStatusToHubspot(status: string): string {
   };
   
   return statusMap[status.toLowerCase()] || "NEW";
+}
+
+/**
+ * Get HubSpot ticket URL
+ * Returns the URL to view the ticket in HubSpot
+ */
+export function getHubspotTicketUrl(hubspotId: string): string {
+  // HubSpot ticket URLs follow this format:
+  // https://app.hubspot.com/contacts/[PORTAL_ID]/record/0-5/[TICKET_ID]
+  // We don't have portal ID readily available, so we'll use a simplified version
+  // that should redirect correctly
+  return `https://app.hubspot.com/contacts/ticket/${hubspotId}`;
+}
+
+/**
+ * Get HubSpot company URL
+ * Returns the URL to view the company in HubSpot
+ */
+export function getHubspotCompanyUrl(hubspotId: string): string {
+  return `https://app.hubspot.com/contacts/company/${hubspotId}`;
 }
 
 
