@@ -153,27 +153,35 @@ export default function CustomersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Loading customers...</p>
+        <p className="text-slate-500">Loading customers...</p>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Customers</h2>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Customers</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Manage customer companies and pricing tiers
+          </p>
+        </div>
         <div className="flex gap-3">
           <button
             onClick={handleSyncFromHubspot}
             disabled={syncing}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-success disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
           >
-            {syncing ? "Syncing..." : "🔄 Sync from HubSpot"}
+            <svg className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {syncing ? "Syncing..." : "Sync from HubSpot"}
           </button>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="btn-primary"
           >
             {showAddForm ? "Cancel" : "+ Add Customer"}
           </button>
@@ -182,11 +190,11 @@ export default function CustomersPage() {
 
       {/* Add Customer Form */}
       {showAddForm && (
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Add New Customer</h3>
+        <div className="card p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Add New Customer</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">
                 Company Name *
               </label>
               <input
@@ -195,20 +203,20 @@ export default function CustomersPage() {
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="input"
                 placeholder="Enter company name"
               />
             </div>
 
             <div>
-              <label htmlFor="pricingTier" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="pricingTier" className="block text-sm font-medium text-slate-700 mb-2">
                 Pricing Tier
               </label>
               <select
                 id="pricingTier"
                 value={formData.pricingTier}
                 onChange={(e) => handleTierChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="input"
               >
                 <option value="basic">Basic - $40/machine, $180/hour</option>
                 <option value="standard">Standard - $60/machine, $150/hour</option>
@@ -218,7 +226,7 @@ export default function CustomersPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="pricePerMachine" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="pricePerMachine" className="block text-sm font-medium text-slate-700 mb-2">
                   Price per Machine ($/month)
                 </label>
                 <input
@@ -226,11 +234,11 @@ export default function CustomersPage() {
                   type="number"
                   value={formData.pricePerMachine}
                   onChange={(e) => setFormData({ ...formData, pricePerMachine: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="input"
                 />
               </div>
               <div>
-                <label htmlFor="hourlyRate" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="hourlyRate" className="block text-sm font-medium text-slate-700 mb-2">
                   Hourly Rate ($/hour)
                 </label>
                 <input
@@ -238,7 +246,7 @@ export default function CustomersPage() {
                   type="number"
                   value={formData.hourlyRate}
                   onChange={(e) => setFormData({ ...formData, hourlyRate: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="input"
                 />
               </div>
             </div>
@@ -343,22 +351,22 @@ export default function CustomersPage() {
               )}
             </div>
 
-            <div className="flex gap-3 pt-4 border-t border-gray-200">
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Create Customer
-              </button>
+            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => {
                   setShowAddForm(false);
                   setSites([]);
                 }}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                className="btn-secondary"
               >
                 Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-primary"
+              >
+                Create Customer
               </button>
             </div>
           </form>
@@ -366,67 +374,59 @@ export default function CustomersPage() {
       )}
 
       {/* Customers Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="table-container">
         {customers.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-gray-500 mb-4">No customers yet</p>
+            <p className="text-slate-500 mb-4">No customers yet</p>
             <button
               onClick={() => setShowAddForm(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="btn-primary"
             >
               Add Your First Customer
             </button>
           </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="table">
+            <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Company Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Pricing Tier
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Monthly Rate
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Hourly Rate
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sites
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th>Company Name</th>
+                <th>Pricing Tier</th>
+                <th>Monthly Rate</th>
+                <th>Hourly Rate</th>
+                <th>Sites</th>
+                <th>Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody>
               {customers.map((customer) => (
-                <tr key={customer.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                <tr key={customer.id}>
+                  <td>
+                    <div className="font-medium text-slate-900">{customer.name}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 capitalize">
+                  <td>
+                    <span className={`badge ${
+                      customer.pricingTier === 'mega' ? 'badge-warning' :
+                      customer.pricingTier === 'standard' ? 'badge-info' :
+                      'badge-neutral'
+                    } capitalize`}>
                       {customer.pricingTier}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="text-slate-600">
                     ${customer.pricePerMachine}/machine
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="text-slate-600">
                     ${customer.hourlyRate}/hour
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="text-slate-600">
                     {customer._count.sites} site{customer._count.sites !== 1 ? "s" : ""}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <td>
                     <Link
                       href={`/admin/customers/${customer.id}`}
-                      className="text-blue-600 hover:text-blue-900"
+                      className="text-primary-600 hover:text-primary-700 font-medium"
                     >
-                      View
+                      View Details →
                     </Link>
                   </td>
                 </tr>

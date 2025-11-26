@@ -62,6 +62,7 @@ model User {
   role              UserRole
   companyId         String?
   company           Company? @relation(fields: [companyId], references: [id])
+  isActive          Boolean  @default(true)
   twoFactorSecret   String?
   twoFactorEnabled  Boolean  @default(false)
   createdAt         DateTime @default(now())

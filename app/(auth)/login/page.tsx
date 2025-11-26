@@ -4,10 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 /**
- * Simple Login Page - Direct API Call
- * 
- * This version posts directly to our custom API route,
- * completely bypassing NextAuth's client-side issues.
+ * Enterprise Login Page
+ * Professional authentication interface
  */
 
 export default function LoginPage() {
@@ -23,7 +21,6 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Post directly to our custom login API
       const response = await fetch("/api/login", {
         method: "POST",
         headers: {
@@ -41,8 +38,6 @@ export default function LoginPage() {
         setError(data.error || "Invalid email or password");
         setLoading(false);
       } else if (data.success) {
-        // Login successful!
-        // Store user info temporarily (we'll set up proper session next)
         sessionStorage.setItem("user", JSON.stringify(data.user));
         window.location.href = "/admin";
       }
@@ -54,75 +49,134 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
-        <div>
-          <h1 className="text-3xl font-bold text-center text-gray-900">
-            Megabox Service Portal
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Background pattern */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djJoMnYtMmgtMnptMCAwaDJ2LTJoLTJ2MnptMCAwdi0yaDJ2MmgtMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-50"></div>
+      
+      <div className="relative max-w-md w-full mx-4">
+        {/* Logo/Brand */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg mb-4">
+            <span className="text-white font-bold text-2xl">M</span>
+          </div>
+          <h1 className="text-3xl font-bold text-white">
+            Megabox Service Platform
           </h1>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to your account
+          <p className="mt-2 text-slate-400">
+            Enterprise Service Management
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
+        {/* Login Card */}
+        <div className="bg-white rounded-xl shadow-hard p-8">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-slate-900">Sign in to your account</h2>
+            <p className="mt-1 text-sm text-slate-500">Enter your credentials to continue</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="bg-danger-50 border border-danger-200 text-danger-700 px-4 py-3 rounded-lg text-sm">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  <span>{error}</span>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input"
+                placeholder="admin@megaboxsupply.com"
+                disabled={loading}
+              />
             </div>
-          )}
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email address
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="admin@megaboxsupply.com"
-            />
-          </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input"
+                placeholder="••••••••"
+                disabled={loading}
+              />
+            </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter your password"
-            />
-          </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-700">
+                  Remember me
+                </label>
+              </div>
 
-          <div>
+              <div className="text-sm">
+                <a href="#" className="font-medium text-primary-600 hover:text-primary-700">
+                  Forgot password?
+                </a>
+              </div>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary w-full flex items-center justify-center"
             >
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Signing in...
+                </>
+              ) : (
+                "Sign in"
+              )}
             </button>
-          </div>
-        </form>
+          </form>
 
-        <div className="mt-4 text-center text-sm text-gray-600">
-          <p>Default admin credentials:</p>
-          <p className="font-mono text-xs mt-1">
-            admin@megaboxsupply.com / admin123
-          </p>
+          <div className="mt-6 pt-6 border-t border-slate-200">
+            <p className="text-xs text-center text-slate-500">
+              © 2024 Megabox Supply. All rights reserved.
+            </p>
+          </div>
+        </div>
+
+        {/* Demo Credentials */}
+        <div className="mt-6 p-4 bg-slate-800 rounded-lg border border-slate-700">
+          <p className="text-xs text-slate-400 font-medium mb-2">Demo Credentials:</p>
+          <div className="space-y-1">
+            <p className="text-xs text-slate-300 font-mono">Email: admin@megaboxsupply.com</p>
+            <p className="text-xs text-slate-300 font-mono">Password: admin123</p>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-

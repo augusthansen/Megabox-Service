@@ -244,26 +244,35 @@ export default function TicketsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Loading tickets...</p>
+        <p className="text-slate-500">Loading tickets...</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Tickets</h2>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Tickets</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Manage service tickets and support requests
+          </p>
+        </div>
         <div className="flex gap-3">
           <button
             onClick={handleSyncFromHubspot}
             disabled={syncing}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-success disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
           >
-            {syncing ? "Syncing..." : "🔄 Sync from HubSpot"}
+            <svg className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {syncing ? "Syncing..." : "Sync from HubSpot"}
           </button>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="btn-primary"
           >
             {showAddForm ? "Cancel" : "+ Create Ticket"}
           </button>
@@ -271,17 +280,17 @@ export default function TicketsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
+      <div className="card p-4">
         <div className="flex gap-4">
           <div>
-            <label htmlFor="filter-status" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="filter-status" className="block text-sm font-medium text-slate-700 mb-2">
               Status
             </label>
             <select
               id="filter-status"
               value={filters.status}
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="input"
             >
               <option value="">All</option>
               <option value="open">Open</option>
@@ -293,14 +302,14 @@ export default function TicketsPage() {
             </select>
           </div>
           <div>
-            <label htmlFor="filter-priority" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="filter-priority" className="block text-sm font-medium text-slate-700 mb-2">
               Priority
             </label>
             <select
               id="filter-priority"
               value={filters.priority}
               onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="input"
             >
               <option value="">All</option>
               <option value="low">Low</option>
@@ -314,12 +323,12 @@ export default function TicketsPage() {
 
       {/* Create Ticket Form */}
       {showAddForm && (
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Create New Ticket</h3>
+        <div className="card p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Create New Ticket</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label htmlFor="companyId" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="companyId" className="block text-sm font-medium text-slate-700 mb-2">
                   Customer *
                 </label>
                 <select
@@ -327,7 +336,7 @@ export default function TicketsPage() {
                   required
                   value={formData.companyId}
                   onChange={(e) => setFormData({ ...formData, companyId: e.target.value, siteId: "", machineId: "" })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="input"
                 >
                   <option value="">Select customer</option>
                   {companies.map((company) => (
@@ -338,7 +347,7 @@ export default function TicketsPage() {
                 </select>
               </div>
               <div>
-                <label htmlFor="siteId" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="siteId" className="block text-sm font-medium text-slate-700 mb-2">
                   Site *
                 </label>
                 <select
@@ -347,7 +356,7 @@ export default function TicketsPage() {
                   value={formData.siteId}
                   onChange={(e) => setFormData({ ...formData, siteId: e.target.value, machineId: "" })}
                   disabled={!formData.companyId}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                  className="input"
                 >
                   <option value="">Select site</option>
                   {sites.map((site) => (
@@ -358,7 +367,7 @@ export default function TicketsPage() {
                 </select>
               </div>
               <div>
-                <label htmlFor="machineId" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="machineId" className="block text-sm font-medium text-slate-700 mb-2">
                   Machine (Optional)
                 </label>
                 <select
@@ -366,7 +375,7 @@ export default function TicketsPage() {
                   value={formData.machineId}
                   onChange={(e) => setFormData({ ...formData, machineId: e.target.value })}
                   disabled={!formData.siteId}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                  className="input"
                 >
                   <option value="">No machine</option>
                   {machines.map((machine) => (
@@ -379,7 +388,7 @@ export default function TicketsPage() {
             </div>
 
             <div>
-              <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="subject" className="block text-sm font-medium text-slate-700 mb-2">
                 Subject *
               </label>
               <input
@@ -388,13 +397,13 @@ export default function TicketsPage() {
                 required
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="input"
                 placeholder="Brief description of the issue"
               />
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="description" className="block text-sm font-medium text-slate-700 mb-2">
                 Description
               </label>
               <textarea
@@ -402,21 +411,21 @@ export default function TicketsPage() {
                 rows={4}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="input"
                 placeholder="Detailed description of the issue..."
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="priority" className="block text-sm font-medium text-slate-700 mb-2">
                   Priority
                 </label>
                 <select
                   id="priority"
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="input"
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
@@ -430,26 +439,26 @@ export default function TicketsPage() {
                     type="checkbox"
                     checked={formData.machineDown}
                     onChange={(e) => setFormData({ ...formData, machineDown: e.target.checked })}
-                    className="mr-2"
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded mr-2"
                   />
-                  <span className="text-sm font-medium text-gray-700">Machine is down</span>
+                  <span className="text-sm font-medium text-slate-700">Machine is down</span>
                 </label>
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Create Ticket
-              </button>
+            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setShowAddForm(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                className="btn-secondary"
               >
                 Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-primary"
+              >
+                Create Ticket
               </button>
             </div>
           </form>
@@ -457,125 +466,113 @@ export default function TicketsPage() {
       )}
 
       {/* Tickets Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="table-container">
         {tickets.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-gray-500 mb-4">No tickets found</p>
+            <p className="text-slate-500 mb-4">No tickets found</p>
             <button
               onClick={() => setShowAddForm(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="btn-primary"
             >
               Create Your First Ticket
             </button>
           </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="table">
+            <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ticket #
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Subject
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Site
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Machine
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Priority
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th>Ticket #</th>
+                <th>Subject</th>
+                <th>Customer</th>
+                <th>Site</th>
+                <th>Machine</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {tickets.map((ticket) => (
-                <tr key={ticket.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{ticket.ticketNumber}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">{ticket.subject}</div>
-                    {ticket.machineDown && (
-                      <span className="inline-block mt-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                        Machine Down
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Link
-                      href={`/admin/customers/${ticket.company.id}`}
-                      className="text-sm text-blue-600 hover:text-blue-900"
-                    >
-                      {ticket.company.name}
-                    </Link>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Link
-                      href={`/admin/sites/${ticket.site.id}`}
-                      className="text-sm text-blue-600 hover:text-blue-900"
-                    >
-                      {ticket.site.name}
-                    </Link>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {ticket.machine ? (
+            <tbody>
+              {tickets.map((ticket) => {
+                const priorityBadges = {
+                  low: "badge-neutral",
+                  medium: "badge-info",
+                  high: "badge-warning",
+                  urgent: "badge-danger",
+                };
+
+                const statusBadges = {
+                  open: "badge-info",
+                  assigned: "badge-info",
+                  in_progress: "badge-warning",
+                  on_hold: "badge-warning",
+                  resolved: "badge-success",
+                  closed: "badge-neutral",
+                };
+
+                return (
+                  <tr key={ticket.id}>
+                    <td>
+                      <div className="font-mono text-sm font-medium text-slate-900">
+                        {ticket.ticketNumber}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="font-medium text-slate-900">{ticket.subject}</div>
+                      {ticket.machineDown && (
+                        <span className="inline-block mt-1 badge badge-danger">
+                          Machine Down
+                        </span>
+                      )}
+                    </td>
+                    <td>
                       <Link
-                        href={`/admin/machines/${ticket.machine.id}`}
-                        className="text-sm text-blue-600 hover:text-blue-900"
+                        href={`/admin/customers/${ticket.company.id}`}
+                        className="text-primary-600 hover:text-primary-700"
                       >
-                        {ticket.machine.name}
+                        {ticket.company.name}
                       </Link>
-                    ) : (
-                      <span className="text-sm text-gray-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      ticket.priority === "urgent"
-                        ? "bg-red-100 text-red-800"
-                        : ticket.priority === "high"
-                        ? "bg-orange-100 text-orange-800"
-                        : ticket.priority === "medium"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}>
-                      {ticket.priority}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      ticket.status === "open"
-                        ? "bg-blue-100 text-blue-800"
-                        : ticket.status === "in_progress"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : ticket.status === "resolved" || ticket.status === "closed"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}>
-                      {ticket.status.replace("_", " ")}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <Link
-                      href={`/admin/tickets/${ticket.id}`}
-                      className="text-blue-600 hover:text-blue-900"
-                    >
-                      View
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td>
+                      <Link
+                        href={`/admin/sites/${ticket.site.id}`}
+                        className="text-slate-600 hover:text-slate-900"
+                      >
+                        {ticket.site.name}
+                      </Link>
+                    </td>
+                    <td>
+                      {ticket.machine ? (
+                        <Link
+                          href={`/admin/machines/${ticket.machine.id}`}
+                          className="text-slate-600 hover:text-slate-900"
+                        >
+                          {ticket.machine.name}
+                        </Link>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td>
+                      <span className={`badge ${priorityBadges[ticket.priority as keyof typeof priorityBadges] || "badge-neutral"}`}>
+                        {ticket.priority}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`badge ${statusBadges[ticket.status as keyof typeof statusBadges] || "badge-neutral"}`}>
+                        {ticket.status.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td>
+                      <Link
+                        href={`/admin/tickets/${ticket.id}`}
+                        className="text-primary-600 hover:text-primary-700 font-medium"
+                      >
+                        View Details →
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

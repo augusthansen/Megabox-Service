@@ -24,16 +24,44 @@ export function getHubspotClient(): Client {
 
 /**
  * Sync companies from HubSpot CRM
+ * Only syncs companies that have a service plan
  * Returns array of HubSpot company objects
+ * 
+ * @param filterByServicePlan - If true, only sync companies with has_service_plan = true
  */
-export async function syncCompaniesFromHubspot() {
+export async function syncCompaniesFromHubspot(filterByServicePlan = true) {
   try {
     const client = getHubspotClient();
     
-    // Fetch all companies from HubSpot
-    const response = await client.crm.companies.basicApi.getPage(100);
+    // Fetch companies from HubSpot with optional filtering
+    // If filtering, use search API to filter by custom property
+    let companies: any[] = [];
     
-    return response.results.map((company: any) => ({
+    if (filterByServicePlan) {
+      // Use search API to filter companies with service plan
+      const searchResponse = await client.crm.companies.searchApi.doSearch({
+        filterGroups: [
+          {
+            filters: [
+              {
+                propertyName: "has_service_plan",
+                operator: "EQ",
+                value: "true",
+              },
+            ],
+          },
+        ],
+        properties: ["name", "domain", "has_service_plan", "service_plan_tier"],
+        limit: 100,
+      });
+      companies = searchResponse.results;
+    } else {
+      // Fetch all companies (no filter)
+      const response = await client.crm.companies.basicApi.getPage(100);
+      companies = response.results;
+    }
+    
+    return companies.map((company: any) => ({
       hubspotId: company.id,
       name: company.properties.name || company.properties.domain || "Unknown Company",
       properties: company.properties,
