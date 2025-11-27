@@ -74,20 +74,20 @@ export async function syncCompaniesFromHubspot(filterByServicePlan = true) {
 
 /**
  * Sync tickets from HubSpot Service Hub
- * Returns array of HubSpot ticket objects with company associations
+ * Returns array of HubSpot ticket objects with company and contact associations
  */
 export async function syncTicketsFromHubspot() {
   try {
     const client = getHubspotClient();
     
     // Fetch all tickets from HubSpot Service Hub
-    // Request associations to get linked companies
+    // Request associations to get linked companies and contacts
     const response = await client.crm.tickets.basicApi.getPage(
       100,
       undefined,
       ["subject", "hs_ticket_name", "content", "hs_ticket_description", "hs_ticket_priority", "hs_ticket_status", "createdate"],
       undefined,
-      ["companies"]
+      ["companies", "contacts"]
     );
     
     return response.results.map((ticket: any) => ({
@@ -168,15 +168,29 @@ export async function createTicketInHubspot(ticketData: {
       properties.hs_ticket_priority = hubspotPriority;
     }
     
+    // Build associations array
+    const associations: any[] = [];
+    
+    // Add company association
+    if (ticketData.companyId) {
+      associations.push({
+        to: { id: ticketData.companyId },
+        types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 16 }], // Company association
+      });
+    }
+    
+    // Add contact association
+    if (ticketData.contactId) {
+      associations.push({
+        to: { id: ticketData.contactId },
+        types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 16 }], // Contact association
+      });
+    }
+    
     // Create the ticket
     const ticket = await client.crm.tickets.basicApi.create({
       properties,
-      associations: ticketData.companyId ? [
-        {
-          to: { id: ticketData.companyId },
-          types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 16 }], // Company association
-        },
-      ] : undefined,
+      associations: associations.length > 0 ? associations : undefined,
     });
     
     return ticket;
@@ -275,6 +289,90 @@ export function getHubspotTicketUrl(hubspotId: string): string {
  */
 export function getHubspotCompanyUrl(hubspotId: string): string {
   return `https://app.hubspot.com/contacts/company/${hubspotId}`;
+}
+
+/**
+ * Get HubSpot contact URL
+ * Returns the URL to view the contact in HubSpot
+ */
+export function getHubspotContactUrl(hubspotId: string): string {
+  return `https://app.hubspot.com/contacts/contact/${hubspotId}`;
+}
+
+/**
+ * Sync contacts from HubSpot CRM
+ * Only syncs contacts associated with companies that have a service plan
+ * Returns array of HubSpot contact objects
+ */
+export async function syncContactsFromHubspot() {
+  try {
+    const client = getHubspotClient();
+    
+    // Fetch contacts from HubSpot
+    // We'll get all contacts and then filter by company association
+    const response = await client.crm.contacts.basicApi.getPage(
+      100,
+      undefined,
+      ["firstname", "lastname", "email", "phone", "jobtitle"],
+      undefined,
+      ["companies"]
+    );
+    
+    return response.results.map((contact: any) => ({
+      hubspotId: contact.id,
+      firstName: contact.properties.firstname || "",
+      lastName: contact.properties.lastname || "",
+      email: contact.properties.email || null,
+      phone: contact.properties.phone || null,
+      jobTitle: contact.properties.jobtitle || null,
+      properties: contact.properties,
+      associations: contact.associations,
+    }));
+  } catch (error) {
+    console.error("Error syncing contacts from HubSpot:", error);
+    throw error;
+  }
+}
+
+/**
+ * Create a contact in HubSpot
+ */
+export async function createContactInHubspot(contactData: {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  companyId?: string;
+}) {
+  try {
+    const client = getHubspotClient();
+    
+    const properties: any = {
+      email: contactData.email,
+      firstname: contactData.firstName,
+      lastname: contactData.lastName,
+    };
+    
+    if (contactData.phone) {
+      properties.phone = contactData.phone;
+    }
+    
+    // Create the contact
+    const contact = await client.crm.contacts.basicApi.create({
+      properties,
+      associations: contactData.companyId ? [
+        {
+          to: { id: contactData.companyId },
+          types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 1 }], // Company association
+        },
+      ] : undefined,
+    });
+    
+    return contact;
+  } catch (error) {
+    console.error("Error creating contact in HubSpot:", error);
+    throw error;
+  }
 }
 
 

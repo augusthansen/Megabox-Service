@@ -69,28 +69,45 @@ A remote service management platform for mail inserter machines. This is a Next.
    - HubSpot sync functionality
 
 8. **User Management** ⭐ **RECENTLY ADDED**
+
    - List all users
    - Create new users with roles
    - Edit user details
    - Toggle user active/inactive status
    - Filter users by company
 
-9. **HubSpot Integration** ⭐ **RECENTLY ADDED**
-   
+9. **HubSpot Integration** ⭐ **RECENTLY ENHANCED**
+
    **Companies:**
+
    - Sync companies from HubSpot CRM
    - Filter sync by "Service Plan" custom property
    - Automatic creation of new companies
    - Update existing companies on re-sync
-   
+
+   **Contacts:** ⭐ **NEW**
+
+   - Sync HubSpot contacts to local users
+   - Automatic user creation for contacts with service plans
+   - Link existing users to HubSpot contacts by email
+   - Company associations preserved
+   - Direct links to view contacts in HubSpot
+
    **Tickets:**
-   - Sync tickets from HubSpot Service Hub with company associations
+
+   - Sync tickets from HubSpot Service Hub with company AND contact associations
    - Two-way sync: Create/update tickets in app → automatically syncs to HubSpot
    - Status and priority mapping between systems
+   - Contact associations: tickets link to specific people
    - Direct links to view/edit tickets in HubSpot
-   - Company association preservation
-   
-   See [HUBSPOT_TICKETS.md](./HUBSPOT_TICKETS.md) for detailed ticket integration documentation
+   - Full context of who created each ticket
+
+   **Documentation:**
+
+   - [HUBSPOT_SETUP.md](./HUBSPOT_SETUP.md) - Initial setup guide
+   - [HUBSPOT_TICKETS.md](./HUBSPOT_TICKETS.md) - Ticket integration details
+   - [HUBSPOT_CONTACTS.md](./HUBSPOT_CONTACTS.md) - Contact sync guide ⭐ **NEW**
+   - [HUBSPOT_BEST_PRACTICES.md](./HUBSPOT_BEST_PRACTICES.md) - Integration strategy
 
 ## Database Schema
 

@@ -18,6 +18,7 @@ interface User {
     id: string;
     name: string;
   } | null;
+  hubspotId: string | null;
   isActive: boolean;
   createdAt: string;
 }
@@ -32,6 +33,7 @@ export default function UsersPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -123,6 +125,35 @@ export default function UsersPage() {
     }
   };
 
+  const handleSyncFromHubspot = async () => {
+    setSyncing(true);
+    try {
+      const response = await fetch("/api/hubspot/sync-contacts", {
+        method: "POST",
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(
+          `Sync complete!\n\n` +
+          `✓ Synced: ${data.synced} new contacts\n` +
+          `✓ Updated: ${data.updated} existing contacts\n` +
+          `⚠ Skipped: ${data.skipped} contacts\n` +
+          `✗ Errors: ${data.errors}`
+        );
+        fetchUsers(); // Refresh the list
+      } else {
+        alert(data.error || "Failed to sync from HubSpot");
+      }
+    } catch (error) {
+      console.error("Error syncing from HubSpot:", error);
+      alert("Something went wrong while syncing");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const getRoleBadge = (role: string) => {
     const badges = {
       super_admin: "badge badge-danger",
@@ -161,12 +192,24 @@ export default function UsersPage() {
             Manage system users and access control
           </p>
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="btn-primary"
-        >
-          {showAddForm ? "Cancel" : "+ Add User"}
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={handleSyncFromHubspot}
+            disabled={syncing}
+            className="btn-success disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+          >
+            <svg className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {syncing ? "Syncing..." : "Sync from HubSpot"}
+          </button>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="btn-primary"
+          >
+            {showAddForm ? "Cancel" : "+ Add User"}
+          </button>
+        </div>
       </div>
 
       {/* Add User Form */}
@@ -331,15 +374,30 @@ export default function UsersPage() {
               users.map((user) => (
                 <tr key={user.id}>
                   <td>
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center mr-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">
                           {user.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <span className="font-medium text-slate-900">
-                        {user.name}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-slate-900">
+                          {user.name}
+                        </span>
+                        {user.hubspotId && (
+                          <a
+                            href={`https://app.hubspot.com/contacts/contact/${user.hubspotId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-orange-600 hover:text-orange-700 transition-colors"
+                            title="View in HubSpot"
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M18.5 0c-1.7 0-3.1 1.4-3.1 3.1 0 .4.1.8.2 1.1l-4.2 2.4c-.6-.4-1.3-.6-2-.6-2.1 0-3.8 1.7-3.8 3.8 0 .5.1.9.2 1.4l-3.1 2c-.4-.2-.9-.3-1.4-.3C.6 12.9 0 13.5 0 14.2s.6 1.3 1.3 1.3 1.3-.6 1.3-1.3c0-.3-.1-.5-.2-.7l3.1-2c.6.5 1.4.9 2.3.9 2.1 0 3.8-1.7 3.8-3.8 0-.5-.1-.9-.2-1.4l4.2-2.4c.6.4 1.3.6 2 .6 2 0 3.6-1.6 3.6-3.6S20.5 0 18.5 0zm0 2.2c.5 0 .9.4.9.9s-.4.9-.9.9-.9-.4-.9-.9.4-.9.9-.9zM9.4 11.2c-1.2 0-2.2-1-2.2-2.2s1-2.2 2.2-2.2 2.2 1 2.2 2.2-1 2.2-2.2 2.2zM1.3 15c-.2 0-.3-.1-.3-.3s.1-.3.3-.3.3.1.3.3-.1.3-.3.3zm17.2 3.6c-1.7 0-3.1 1.4-3.1 3.1s1.4 3.1 3.1 3.1 3.1-1.4 3.1-3.1-1.4-3.1-3.1-3.1zm0 4.8c-.9 0-1.7-.8-1.7-1.7s.8-1.7 1.7-1.7 1.7.8 1.7 1.7-.8 1.7-1.7 1.7z"/>
+                            </svg>
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="text-slate-600">{user.email}</td>

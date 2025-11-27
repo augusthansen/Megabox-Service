@@ -61,6 +61,18 @@ export async function POST() {
           }
         }
 
+        // Try to find associated contact from HubSpot associations
+        let createdByUserId: string = adminUser.id; // Default to admin
+        if (hubspotTicket.associations?.contacts?.results?.length > 0) {
+          const hubspotContactId = hubspotTicket.associations.contacts.results[0].id;
+          const user = await prisma.user.findUnique({
+            where: { hubspotId: hubspotContactId },
+          });
+          if (user) {
+            createdByUserId = user.id;
+          }
+        }
+
         // If no company found, try to get the first company (fallback)
         if (!companyId) {
           const firstCompany = await prisma.company.findFirst();
@@ -108,7 +120,7 @@ export async function POST() {
               ticketNumber,
               companyId,
               siteId: site.id,
-              createdById: adminUser.id,
+              createdById: createdByUserId, // Use the contact if found, otherwise admin
               subject: hubspotTicket.subject,
               description: hubspotTicket.description,
               priority: hubspotTicket.priority as any,

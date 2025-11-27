@@ -62,6 +62,7 @@ model User {
   role              UserRole
   companyId         String?
   company           Company? @relation(fields: [companyId], references: [id])
+  hubspotId         String?  @unique  // HubSpot contact ID
   isActive          Boolean  @default(true)
   twoFactorSecret   String?
   twoFactorEnabled  Boolean  @default(false)
@@ -77,6 +78,7 @@ model User {
 
   @@index([email])
   @@index([companyId])
+  @@index([hubspotId])
 }
 
 model Company {

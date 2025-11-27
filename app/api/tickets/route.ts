@@ -136,9 +136,14 @@ export async function POST(request: NextRequest) {
       createdById = creator.id;
     }
 
-    // Get company to find HubSpot ID
+    // Get company and creator to find HubSpot IDs
     const company = await prisma.company.findUnique({
       where: { id: companyId },
+      select: { hubspotId: true },
+    });
+
+    const creator = await prisma.user.findUnique({
+      where: { id: createdById },
       select: { hubspotId: true },
     });
 
@@ -153,6 +158,7 @@ export async function POST(request: NextRequest) {
           description: description || undefined,
           priority: priority || undefined,
           companyId: company.hubspotId,
+          contactId: creator?.hubspotId || undefined, // Associate with contact if available
         });
         hubspotId = hubspotTicket.id;
       } catch (error) {
