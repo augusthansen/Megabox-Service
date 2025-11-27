@@ -39,7 +39,13 @@ export default function LoginPage() {
         setLoading(false);
       } else if (data.success) {
         sessionStorage.setItem("user", JSON.stringify(data.user));
-        window.location.href = "/admin";
+        
+        // Route based on user role
+        if (["customer_admin", "customer_tech"].includes(data.user.role)) {
+          window.location.href = "/customer";
+        } else {
+          window.location.href = "/admin";
+        }
       }
     } catch (error) {
       console.error("Login error:", error);
