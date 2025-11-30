@@ -16,7 +16,10 @@ This guide will help you set up HubSpot CRM and Service Hub integration.
 5. Give it a name (e.g., "Megabox Service Platform")
 6. Under **Scopes**, grant the following permissions:
    - **CRM** → **Read** and **Write** access to Companies
+   - **CRM** → **Read** and **Write** access to Contacts
+   - **CRM** → **Read** and **Write** access to Engagements (for call logging)
    - **Service Hub** → **Read** and **Write** access to Tickets
+   - **Timeline** → **Read** and **Write** access (for calling extensions)
 7. Click **Create app**
 8. Copy the **Access Token** (you'll need this for the next step)
 
@@ -66,7 +69,7 @@ This guide will help you set up HubSpot CRM and Service Hub integration.
 
 - **Companies**: HubSpot companies sync to our `Company` model
 - **Tickets**: HubSpot Service Hub tickets sync to our `Ticket` model
-- **Status Mapping**: 
+- **Status Mapping**:
   - HubSpot `NEW` → Our `open`
   - HubSpot `IN_PROGRESS` → Our `in_progress`
   - HubSpot `RESOLVED` → Our `resolved`
@@ -109,5 +112,3 @@ This guide will help you set up HubSpot CRM and Service Hub integration.
 - Set up automated webhooks from HubSpot (coming soon)
 - Configure custom properties mapping (coming soon)
 - Set up bi-directional sync scheduling (coming soon)
-
-

@@ -9,10 +9,12 @@
 ## Next Steps to Debug
 
 1. **Check the browser console** (F12 → Console tab):
+
    - What exact error message do you see?
    - Are there any other errors?
 
 2. **Check the terminal** where `npm run dev` is running:
+
    - What error messages appear there?
    - Copy the full error message
 
@@ -26,5 +28,3 @@
 ## Alternative: Try Direct API Call
 
 If the client-side signIn isn't working, we can try posting directly to the API endpoint. Let me know what you see in the console/terminal and I'll create a fix!
-
-

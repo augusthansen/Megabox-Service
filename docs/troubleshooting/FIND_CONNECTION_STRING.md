@@ -3,16 +3,19 @@
 ## Step-by-Step Instructions
 
 ### Step 1: Log into Supabase
+
 1. Go to **https://supabase.com**
 2. Click **"Sign In"** (top right)
 3. Log in with your account
 
 ### Step 2: Open Your Project
+
 1. You should see a list of your projects (or just one if you only have one)
 2. **Click on your project** to open it
 3. Wait for the dashboard to load
 
 ### Step 3: Go to Settings
+
 1. Look at the **left sidebar** - you'll see icons like:
    - 🏠 Home
    - 📊 Table Editor
@@ -21,6 +24,7 @@
 2. Click the **⚙️ Settings** icon (it's usually at the bottom of the sidebar)
 
 ### Step 4: Open Database Settings
+
 1. In the Settings page, you'll see a menu on the left with:
    - General
    - API
@@ -31,12 +35,14 @@
 2. Click **"Database"** in that left menu
 
 ### Step 5: Find Connection String
+
 1. Scroll down the Database settings page
 2. Look for a section called **"Connection string"** or **"Connection pooling"**
 3. You'll see tabs like: **"URI"**, **"JDBC"**, **"Golang"**, etc.
 4. **Click the "URI" tab** (this is the one we need!)
 
 ### Step 6: Copy the Connection String
+
 1. You'll see a connection string that looks like:
    ```
    postgresql://postgres:[YOUR-PASSWORD]@db.xxxxx.supabase.co:5432/postgres
@@ -66,10 +72,12 @@
 ## 🔑 Important Notes
 
 1. **The connection string has `[YOUR-PASSWORD]` as a placeholder**
+
    - This is your **database password**, not your Supabase account password
    - If you don't know it, you can reset it in the same settings page
 
 2. **If you see `[YOUR-PASSWORD]` in the string:**
+
    - You need to replace it with your actual database password
    - Or click "Reset database password" to set a new one
 
@@ -102,6 +110,7 @@
 ## 💡 Quick Check
 
 **Are you:**
+
 - ✅ Logged into Supabase?
 - ✅ In your project dashboard?
 - ✅ Clicked Settings (⚙️ icon)?
@@ -109,5 +118,3 @@
 - ✅ Scrolled down to see "Connection string"?
 
 If you've done all these and still can't find it, let me know what you see on the Database settings page!
-
-

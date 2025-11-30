@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import HubSpotChatButton from "@/components/hubspot-chat-button";
+import CommunicationRequest from "@/components/communication-request";
 
 /**
  * Customer Ticket Detail Page
@@ -17,6 +19,10 @@ interface Ticket {
   status: string;
   priority: string;
   machineDown: boolean;
+  company: {
+    id: string;
+    name: string;
+  };
   machine: {
     id: string;
     name: string;
@@ -48,8 +54,16 @@ export default function CustomerTicketDetailPage() {
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSuccess, setShowSuccess] = useState(isSuccess);
+  const [user, setUser] = useState<any>(null);
+  const [activeVideoCall, setActiveVideoCall] = useState<any>(null);
 
   useEffect(() => {
+    // Get user from session
+    const userData = sessionStorage.getItem("user");
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+
     if (ticketId) {
       fetchTicket();
     }
@@ -69,6 +83,11 @@ export default function CustomerTicketDetailPage() {
       if (response.ok) {
         const data = await response.json();
         setTicket(data);
+        
+        // Check for active video call communication request
+        if (data.id) {
+          checkForActiveVideoCall(data.id);
+        }
       } else {
         console.error("Ticket not found");
       }
@@ -78,6 +97,45 @@ export default function CustomerTicketDetailPage() {
       setLoading(false);
     }
   };
+
+  const checkForActiveVideoCall = async (ticketId: string) => {
+    try {
+      const response = await fetch(`/api/communication-requests?ticketId=${ticketId}&status=in_progress&requestType=video_call`);
+      if (response.ok) {
+        const requests = await response.json();
+        const videoCallRequest = requests.find((r: any) => r.requestType === "video_call" && r.status === "in_progress");
+        if (videoCallRequest && videoCallRequest.sessionId) {
+          // Get session details to get room URL
+          const sessionResponse = await fetch(`/api/tickets/${ticketId}`);
+          if (sessionResponse.ok) {
+            const ticketData = await sessionResponse.json();
+            const session = ticketData.sessions?.find((s: any) => s.id === videoCallRequest.sessionId);
+            if (session && session.videoRecordingUrl) {
+              setActiveVideoCall({
+                roomUrl: session.videoRecordingUrl,
+                requestId: videoCallRequest.id,
+              });
+            }
+          }
+        } else {
+          setActiveVideoCall(null);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking for active video call:", error);
+    }
+  };
+
+  // Poll for active video calls every 10 seconds
+  useEffect(() => {
+    if (!ticketId) return;
+    
+    const interval = setInterval(() => {
+      checkForActiveVideoCall(ticketId);
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [ticketId]);
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -101,6 +159,7 @@ export default function CustomerTicketDetailPage() {
     };
     return icons[status] || icons.open;
   };
+
 
   if (loading) {
     return (
@@ -185,6 +244,50 @@ export default function CustomerTicketDetailPage() {
               Created {new Date(ticket.createdAt).toLocaleString()}
             </p>
           </div>
+          
+          {/* Active Video Call Notification */}
+          {activeVideoCall && (
+            <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-500 rounded-lg animate-pulse">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                  <div>
+                    <p className="font-semibold text-blue-900">Video Call Active</p>
+                    <p className="text-sm text-blue-700">
+                      A technician has started a video call. Click below to join.
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href={activeVideoCall.roomUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium transition-colors whitespace-nowrap"
+                >
+                  Join Video Call
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Communication Request - Show if ticket is assigned */}
+          {ticket.assignedTo && user && (
+            <div className="mt-4">
+              <CommunicationRequest
+                ticketId={ticket.id}
+                userId={user.id}
+                userPhone={user.phone}
+                userEmail={user.email}
+                userName={user.name}
+                companyName={ticket.company?.name}
+                ticketNumber={ticket.ticketNumber}
+                onRequestCreated={() => {
+                  // Refresh ticket data if needed
+                  fetchTicket();
+                }}
+              />
+            </div>
+          )}
         </div>
 
         <h2 className="text-2xl font-bold text-slate-900 mt-4 mb-2">

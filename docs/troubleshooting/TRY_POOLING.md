@@ -16,6 +16,7 @@ In the **"Connection pooling configuration"** section you saw earlier:
 ## Alternative: Check Connection Info
 
 Sometimes Supabase shows connection info when you:
+
 - Click on the **"Connection pooling configuration"** section header
 - Or look for a **"Show connection string"** link
 - Or check the **"Docs"** button next to it
@@ -25,15 +26,15 @@ Sometimes Supabase shows connection info when you:
 ## 🎯 What I Need:
 
 Can you:
+
 1. Go back to **Settings → Database**
 2. Look at the **"Connection pooling configuration"** section
 3. See if there's a connection string shown there, or a way to view it?
 
 The pooling connection string might look like:
+
 ```
 postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
 ```
 
 Or it might be in a different format. Let me know what you see!
-
-

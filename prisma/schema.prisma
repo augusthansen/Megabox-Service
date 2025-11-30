@@ -44,6 +44,24 @@ enum SessionType {
   video_call
   research
   documentation
+  chat
+  phone_call
+}
+
+enum CommunicationRequestType {
+  video_call
+  phone_call
+  chat
+}
+
+enum CommunicationRequestStatus {
+  pending
+  accepted
+  declined
+  scheduled
+  in_progress
+  completed
+  cancelled
 }
 
 enum InvoiceStatus {
@@ -55,26 +73,30 @@ enum InvoiceStatus {
 }
 
 model User {
-  id                String   @id @default(cuid())
-  email             String   @unique
-  passwordHash      String
-  name              String
-  role              UserRole
-  companyId         String?
-  company           Company? @relation(fields: [companyId], references: [id])
-  hubspotId         String?  @unique  // HubSpot contact ID
-  isActive          Boolean  @default(true)
-  twoFactorSecret   String?
-  twoFactorEnabled  Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id               String   @id @default(cuid())
+  email            String   @unique
+  passwordHash     String
+  name             String
+  role             UserRole
+  companyId        String?
+  company          Company? @relation(fields: [companyId], references: [id])
+  hubspotId        String?  @unique // HubSpot contact ID
+  phone            String? // Phone number for calls
+  isActive         Boolean  @default(true)
+  twoFactorSecret  String?
+  twoFactorEnabled Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   // Relations
-  createdTickets    Ticket[] @relation("CreatedBy")
-  assignedTickets   Ticket[] @relation("AssignedTo")
-  sessions          Session[]
-  attachments       Attachment[]
-  comments          Comment[]
+  createdTickets                Ticket[]               @relation("CreatedBy")
+  assignedTickets               Ticket[]               @relation("AssignedTo")
+  sessions                      Session[]
+  attachments                   Attachment[]
+  comments                      Comment[]
+  primaryContactSites           Site[]                 @relation("SitePrimaryContact")
+  communicationRequests         CommunicationRequest[]
+  assignedCommunicationRequests CommunicationRequest[] @relation("AssignedTech")
 
   @@index([email])
   @@index([companyId])
@@ -82,131 +104,143 @@ model User {
 }
 
 model Company {
-  id                      String       @id @default(cuid())
-  name                    String
-  hubspotId               String?       @unique
-  pricingTier             PricingTier   @default(basic)
-  pricePerMachine         Decimal       @default(40)
-  hourlyRate              Decimal       @default(180)
-  currentMonthUsageHours  Decimal       @default(0)
-  currentMonthUsageCost   Decimal       @default(0)
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
+  id                     String      @id @default(cuid())
+  name                   String
+  email                  String? // Primary company email
+  phone                  String? // Primary company phone
+  hubspotId              String?     @unique
+  pricingTier            PricingTier @default(basic)
+  pricePerMachine        Decimal     @default(40)
+  hourlyRate             Decimal     @default(180)
+  currentMonthUsageHours Decimal     @default(0)
+  currentMonthUsageCost  Decimal     @default(0)
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
 
   // Relations
-  users                   User[]
-  sites                   Site[]
-  tickets                 Ticket[]
-  invoices                Invoice[]
+  users    User[]
+  sites    Site[]
+  tickets  Ticket[]
+  invoices Invoice[]
 
   @@index([hubspotId])
+  @@index([email])
 }
 
 model Site {
-  id          String   @id @default(cuid())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  name        String
-  address     String?
-  city        String?
-  state       String?
-  zipCode     String?
-  timezone    String   @default("America/New_York")
-  contactName String?
-  contactPhone String?
-  contactEmail String?
-  notes       String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String   @id @default(cuid())
+  companyId        String
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name             String
+  address          String?
+  city             String?
+  state            String?
+  zipCode          String?
+  timezone         String   @default("America/New_York")
+  contactName      String?
+  contactPhone     String?
+  contactEmail     String?
+  primaryContactId String? // Main point of contact (User ID)
+  primaryContact   User?    @relation("SitePrimaryContact", fields: [primaryContactId], references: [id])
+  notes            String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   // Relations
-  machines    Machine[]
-  tickets     Ticket[]
-  floorMaps   FloorMap[]
+  machines         Machine[]
+  tickets          Ticket[]
+  floorMaps        FloorMap[]
+  invoiceLineItems InvoiceLineItem[]
 
   @@index([companyId])
+  @@index([primaryContactId])
 }
 
 model Machine {
-  id                  String   @id @default(cuid())
-  siteId              String
-  site                Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  name                String
-  model               String?
-  series              String?
-  serialNumber        String?
-  windowsVersion      String?
+  id                   String   @id @default(cuid())
+  siteId               String
+  site                 Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  name                 String
+  model                String?
+  series               String?
+  serialNumber         String?
+  windowsVersion       String?
   directConnectVersion String?
-  firmwareVersion     String?
-  configuration       Json?    // Scanning, feeders, stations, etc.
-  status              String?
-  isCurrentlyDown     Boolean  @default(false)
-  hasRemoteAccess     Boolean  @default(false)
-  remoteAccessType    String?
-  remoteAccessId      String?
-  floorMapId          String?
-  positionX           Float?
-  positionY           Float?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  firmwareVersion      String?
+  configuration        Json? // Scanning, feeders, stations, etc.
+  status               String?
+  isCurrentlyDown      Boolean  @default(false)
+  hasRemoteAccess      Boolean  @default(false)
+  remoteAccessType     String?
+  remoteAccessId       String?
+  floorMapId           String?
+  positionX            Float?
+  positionY            Float?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   // Relations
-  alarms              MachineAlarm[]
-  tickets             Ticket[]
+  alarms  MachineAlarm[]
+  tickets Ticket[]
 
   @@index([siteId])
   @@index([serialNumber])
 }
 
 model MachineAlarm {
-  id              String   @id @default(cuid())
-  machineId       String
-  machine         Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
-  alarmCode       String
+  id               String    @id @default(cuid())
+  machineId        String
+  machine          Machine   @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  alarmCode        String
   alarmDescription String?
-  occurrenceDate  DateTime @default(now())
-  resolvedDate    DateTime?
-  resolution      String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  occurrenceDate   DateTime  @default(now())
+  resolvedDate     DateTime?
+  resolution       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([machineId])
   @@index([alarmCode])
 }
 
 model Ticket {
-  id            String        @id @default(cuid())
-  ticketNumber  String        @unique
-  hubspotId     String?       @unique
-  companyId     String
-  company       Company       @relation(fields: [companyId], references: [id])
-  siteId        String
-  site          Site          @relation(fields: [siteId], references: [id])
-  machineId     String?
-  machine       Machine?      @relation(fields: [machineId], references: [id])
-  createdById   String
-  createdBy     User          @relation("CreatedBy", fields: [createdById], references: [id])
-  assignedToId  String?
-  assignedTo    User?         @relation("AssignedTo", fields: [assignedToId], references: [id])
-  subject       String
-  description   String?
-  priority      TicketPriority @default(medium)
-  status        TicketStatus  @default(open)
-  machineDown   Boolean       @default(false)
-  totalMinutes  Int           @default(0)
-  totalCost     Decimal       @default(0)
-  createdAt     DateTime      @default(now())
-  assignedAt    DateTime?
-  startedAt     DateTime?
-  resolvedAt    DateTime?
-  closedAt      DateTime?
-  updatedAt     DateTime      @updatedAt
+  id             String         @id @default(cuid())
+  ticketNumber   String         @unique
+  hubspotId      String?        @unique
+  companyId      String
+  company        Company        @relation(fields: [companyId], references: [id])
+  siteId         String
+  site           Site           @relation(fields: [siteId], references: [id])
+  machineId      String?
+  machine        Machine?       @relation(fields: [machineId], references: [id])
+  createdById    String
+  createdBy      User           @relation("CreatedBy", fields: [createdById], references: [id])
+  assignedToId   String?
+  assignedTo     User?          @relation("AssignedTo", fields: [assignedToId], references: [id])
+  subject        String
+  description    String?
+  priority       TicketPriority @default(medium)
+  status         TicketStatus   @default(open)
+  machineDown    Boolean        @default(false)
+  totalMinutes   Int            @default(0)
+  totalCost      Decimal        @default(0)
+  escalationFees Decimal        @default(0) // Per-ticket escalation fees
+  travelExpenses Decimal        @default(0) // Per-ticket travel expenses
+  invoiceId      String? // Link to invoice if billed
+  invoice        Invoice?       @relation(fields: [invoiceId], references: [id])
+  createdAt      DateTime       @default(now())
+  assignedAt     DateTime?
+  startedAt      DateTime?
+  resolvedAt     DateTime?
+  closedAt       DateTime?
+  updatedAt      DateTime       @updatedAt
 
   // Relations
-  sessions      Session[]
-  attachments   Attachment[]
-  comments      Comment[]
+  sessions              Session[]
+  attachments           Attachment[]
+  comments              Comment[]
+  communicationRequests CommunicationRequest[]
 
   @@index([companyId])
   @@index([siteId])
@@ -215,56 +249,66 @@ model Ticket {
   @@index([createdById])
   @@index([assignedToId])
   @@index([ticketNumber])
+  @@index([invoiceId])
 }
 
 model Session {
-  id                String      @id @default(cuid())
-  ticketId          String
-  ticket            Ticket      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  techId            String
-  tech              User        @relation(fields: [techId], references: [id])
-  sessionType       SessionType
-  startTime         DateTime
-  endTime           DateTime?
-  durationMinutes   Int?
-  rateType          String?     // "business", "after_hours", "weekend"
-  rateAmount        Decimal?
-  rateMultiplier    Decimal     @default(1)
-  cost              Decimal?
-  videoRecordingUrl String?
-  notes             String?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  id                     String                @id @default(cuid())
+  ticketId               String
+  ticket                 Ticket                @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  techId                 String
+  tech                   User                  @relation(fields: [techId], references: [id])
+  sessionType            SessionType
+  startTime              DateTime
+  endTime                DateTime?
+  durationMinutes        Int?
+  rateType               String? // "business", "after_hours", "weekend"
+  rateAmount             Decimal?
+  rateMultiplier         Decimal               @default(1)
+  cost                   Decimal?
+  videoRecordingUrl      String?
+  callRecordingUrl       String? // Twilio call recording URL
+  callRecordingSid       String? // Twilio recording SID
+  callTranscription      String? // Call transcription text
+  callTranscriptionSid   String? // Twilio transcription SID
+  callResolutionStatus   String? // "resolved", "ongoing", "needs_followup"
+  notes                  String?
+  communicationRequestId String?               @unique
+  communicationRequest   CommunicationRequest? @relation(fields: [communicationRequestId], references: [id])
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
 
   @@index([ticketId])
   @@index([techId])
+  @@index([communicationRequestId])
+  @@index([callRecordingSid])
 }
 
 model Attachment {
-  id          String   @id @default(cuid())
-  ticketId    String
-  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  fileName    String
-  fileUrl     String
-  fileType    String
-  fileSize    Int
+  id           String   @id @default(cuid())
+  ticketId     String
+  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fileName     String
+  fileUrl      String
+  fileType     String
+  fileSize     Int
   uploadedById String
-  uploadedBy  User     @relation(fields: [uploadedById], references: [id])
-  uploadedAt  DateTime @default(now())
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  uploadedAt   DateTime @default(now())
 
   @@index([ticketId])
 }
 
 model Comment {
-  id          String   @id @default(cuid())
-  ticketId    String
-  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  authorId    String
-  author      User     @relation(fields: [authorId], references: [id])
-  authorName  String
-  content     String
-  isInternal  Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  ticketId   String
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+  authorName String
+  content    String
+  isInternal Boolean  @default(false)
+  createdAt  DateTime @default(now())
 
   @@index([ticketId])
   @@index([authorId])
@@ -275,13 +319,13 @@ model Invoice {
   companyId           String
   company             Company       @relation(fields: [companyId], references: [id])
   invoiceNumber       String        @unique
-  billingPeriod       String        // "2024-01" format
+  billingPeriod       String // "2024-01" format
   machineCount        Int
   subscriptionFee     Decimal
   usageHours          Decimal
   usageFee            Decimal
-  escalationFees      Decimal       @default(0)
-  travelExpenses      Decimal       @default(0)
+  escalationFees      Decimal       @default(0) // Total from all tickets
+  travelExpenses      Decimal       @default(0) // Total from all tickets
   totalAmount         Decimal
   status              InvoiceStatus @default(draft)
   paidDate            DateTime?
@@ -289,9 +333,33 @@ model Invoice {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
+  // Relations
+  tickets   Ticket[] // Tickets included in this invoice
+  lineItems InvoiceLineItem[] // Per-site breakdown
+
   @@index([companyId])
   @@index([invoiceNumber])
   @@index([billingPeriod])
+}
+
+model InvoiceLineItem {
+  id              String   @id @default(cuid())
+  invoiceId       String
+  invoice         Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  siteId          String
+  site            Site     @relation(fields: [siteId], references: [id])
+  machineCount    Int // Number of machines at this site
+  subscriptionFee Decimal // Fee for this site (machines × price per machine)
+  usageHours      Decimal  @default(0) // Total hours from tickets at this site
+  usageFee        Decimal  @default(0) // Usage fee for this site
+  escalationFees  Decimal  @default(0) // Total escalation fees from tickets at this site
+  travelExpenses  Decimal  @default(0) // Total travel expenses from tickets at this site
+  subtotal        Decimal // Total for this site
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([invoiceId])
+  @@index([siteId])
 }
 
 model FloorMap {
@@ -308,4 +376,30 @@ model FloorMap {
   @@index([siteId])
 }
 
+model CommunicationRequest {
+  id            String                     @id @default(cuid())
+  ticketId      String
+  ticket        Ticket                     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  requestedById String // Customer who requested
+  requestedBy   User                       @relation(fields: [requestedById], references: [id])
+  assignedToId  String? // Tech assigned to handle
+  assignedTo    User?                      @relation("AssignedTech", fields: [assignedToId], references: [id])
+  requestType   CommunicationRequestType
+  status        CommunicationRequestStatus @default(pending)
+  scheduledTime DateTime? // When the call is scheduled
+  customerPhone String? // Phone number for phone calls
+  notes         String? // Additional notes from customer
+  techNotes     String? // Notes from tech
+  sessionId     String?                    @unique // Link to Session if completed
+  session       Session?
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+  acceptedAt    DateTime?
+  completedAt   DateTime?
 
+  @@index([ticketId])
+  @@index([requestedById])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([scheduledTime])
+}

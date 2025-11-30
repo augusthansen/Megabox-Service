@@ -33,35 +33,51 @@ export async function POST() {
           where: { hubspotId: hubspotCompany.hubspotId },
         });
 
+        // Extract properties from HubSpot
+        const props = hubspotCompany.properties || {};
+        const email = props.email || props.company_email || null;
+        const phone = props.phone || props.company_phone || null;
+        const pricingTier = props.service_plan_tier || 
+                          props.pricing_tier || 
+                          props.pricing_tier_c || 
+                          "basic";
+        
+        const normalizedTier = pricingTier.toLowerCase() === "standard" ? "standard" : 
+                              pricingTier.toLowerCase() === "mega" ? "mega" : "basic";
+
         if (existing) {
-          // Update existing company
+          // Update existing company with all available fields
           await prisma.company.update({
             where: { id: existing.id },
             data: {
               name: hubspotCompany.name,
+              email: email || existing.email, // Keep existing email if HubSpot doesn't have one
+              phone: phone || existing.phone, // Keep existing phone if HubSpot doesn't have one
+              pricingTier: normalizedTier,
             },
           });
           updated.push(hubspotCompany.name);
         } else {
           // Create new company
-          // Try to extract pricing tier from HubSpot properties if available
-          const pricingTier = hubspotCompany.properties.pricing_tier || 
-                            hubspotCompany.properties.pricing_tier_c || 
-                            "basic";
-          
           await prisma.company.create({
             data: {
               hubspotId: hubspotCompany.hubspotId,
               name: hubspotCompany.name,
-              pricingTier: pricingTier.toLowerCase() === "standard" ? "standard" : 
-                          pricingTier.toLowerCase() === "mega" ? "mega" : "basic",
+              email: email || null,
+              phone: phone || null,
+              pricingTier: normalizedTier,
             },
           });
           synced.push(hubspotCompany.name);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Error syncing company ${hubspotCompany.name}:`, error);
-        errors.push({ company: hubspotCompany.name, error: String(error) });
+        const errorMessage = error?.message || String(error);
+        errors.push({ 
+          company: hubspotCompany.name, 
+          hubspotId: hubspotCompany.hubspotId,
+          error: errorMessage 
+        });
       }
     }
 

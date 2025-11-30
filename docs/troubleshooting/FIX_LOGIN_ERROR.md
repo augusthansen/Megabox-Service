@@ -27,5 +27,3 @@ I've made a few fixes:
 The error might be coming from a redirect. Try this alternative approach - I can create a server action instead of using the client-side signIn function.
 
 Let me know if the restart fixes it, or if you still see the error!
-
-

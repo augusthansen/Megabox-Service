@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
+import { createContactInHubspot } from "@/lib/hubspot";
 
 /**
  * Users API Routes
@@ -13,7 +14,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get("companyId");
 
+    console.log("Users API: Fetching users with companyId:", companyId);
+
     const where = companyId ? { companyId } : {};
+
+    console.log("Users API: Prisma where clause:", where);
 
     const users = await prisma.user.findMany({
       where,
@@ -23,6 +28,7 @@ export async function GET(request: NextRequest) {
         email: true,
         role: true,
         companyId: true,
+        hubspotId: true,
         company: {
           select: {
             id: true,
@@ -37,11 +43,18 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    console.log("Users API: Found users:", users.length);
+    console.log("Users API: Users data:", users.map(u => ({ id: u.id, name: u.name, email: u.email, companyId: u.companyId })));
+
     return NextResponse.json(users);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching users:", error);
+    console.error("Error details:", {
+      message: error?.message,
+      stack: error?.stack,
+    });
     return NextResponse.json(
-      { error: "Failed to fetch users" },
+      { error: "Failed to fetch users", details: error?.message || "Unknown error" },
       { status: 500 }
     );
   }
@@ -70,9 +83,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Normalize email to lowercase
+    const normalizedEmail = email.trim().toLowerCase();
+
     // Check if email already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
@@ -102,15 +118,44 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hashPassword(password);
 
+    // For service tech users, create/link HubSpot contact
+    let hubspotId: string | null = null;
+    if (role === "service_tech") {
+      try {
+        // Split name into first and last name
+        const nameParts = name.trim().split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
+
+        // Create contact in HubSpot
+        const hubspotContact = await createContactInHubspot({
+          email: normalizedEmail,
+          firstName,
+          lastName,
+        });
+
+        if (hubspotContact && hubspotContact.id) {
+          hubspotId = hubspotContact.id;
+          console.log(`Created HubSpot contact for service tech: ${normalizedEmail} (${hubspotId})`);
+        }
+      } catch (hubspotError: any) {
+        // Log error but don't fail user creation
+        console.error("Error creating HubSpot contact for service tech:", hubspotError);
+        console.error("User will be created without HubSpot sync. Error:", hubspotError?.message);
+        // Continue with user creation even if HubSpot sync fails
+      }
+    }
+
     // Create user
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        email: normalizedEmail, // Store email in lowercase
         passwordHash: hashedPassword,
         role,
         companyId: companyId || null,
         isActive: true,
+        hubspotId: hubspotId, // Store HubSpot contact ID if created
       },
       select: {
         id: true,
@@ -118,6 +163,7 @@ export async function POST(request: NextRequest) {
         email: true,
         role: true,
         companyId: true,
+        hubspotId: true,
         company: {
           select: {
             id: true,

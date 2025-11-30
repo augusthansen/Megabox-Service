@@ -31,16 +31,23 @@ export default function AdminPage() {
     // Get user from sessionStorage (layout already checked auth)
     const userData = sessionStorage.getItem("user");
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      
+      // Fetch stats after user is loaded
+      fetchStats(parsedUser);
     }
-
-    // Fetch stats
-    fetchStats();
   }, []);
 
-  const fetchStats = async () => {
+  const fetchStats = async (currentUser?: any) => {
     try {
-      const response = await fetch("/api/stats");
+      // Pass user info to filter stats for service techs
+      let url = "/api/stats";
+      const userToUse = currentUser || user;
+      if (userToUse?.id && userToUse?.role) {
+        url += `?userId=${userToUse.id}&userRole=${userToUse.role}`;
+      }
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setStats(data);
@@ -150,69 +157,79 @@ export default function AdminPage() {
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat) => (
-          <Link
-            key={stat.name}
-            href={stat.href}
-            className="card card-hover p-6 group"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 mb-1">
-                  {stat.name}
-                </p>
-                <p className="text-3xl font-bold text-slate-900">
-                  {loading ? (
-                    <span className="inline-block w-12 h-8 bg-slate-200 rounded animate-pulse"></span>
-                  ) : (
-                    stat.value
-                  )}
-                </p>
-              </div>
-              <div className={`p-3 rounded-lg ${stat.bgColor} ${stat.iconColor} group-hover:scale-110 transition-transform`}>
-                {stat.icon}
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {quickActions.map((action) => (
+      {/* Stats Grid - Filter for service techs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        {statCards
+          .filter((stat) => {
+            // Service techs only see "Open Tickets" stat
+            if (user?.role === "service_tech") {
+              return stat.name === "Open Tickets";
+            }
+            return true;
+          })
+          .map((stat) => (
             <Link
-              key={action.name}
-              href={action.href}
-              className="card card-hover p-5 group"
+              key={stat.name}
+              href={stat.href}
+              className="card card-hover p-6 group"
             >
-              <div className="flex items-start space-x-4">
-                <div className={`p-2 rounded-lg ${
-                  action.color === 'primary' ? 'bg-primary-50 text-primary-600' :
-                  action.color === 'success' ? 'bg-success-50 text-success-600' :
-                  'bg-slate-100 text-slate-600'
-                } group-hover:scale-110 transition-transform`}>
-                  {action.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {action.name}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600 mb-1">
+                    {stat.name}
                   </p>
-                  <p className="text-sm text-slate-500 mt-0.5">
-                    {action.description}
+                  <p className="text-3xl font-bold text-slate-900">
+                    {loading ? (
+                      <span className="inline-block w-12 h-8 bg-slate-200 rounded animate-pulse"></span>
+                    ) : (
+                      stat.value
+                    )}
                   </p>
                 </div>
-                <svg className="w-5 h-5 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                <div className={`p-3 rounded-lg ${stat.bgColor} ${stat.iconColor} group-hover:scale-110 transition-transform`}>
+                  {stat.icon}
+                </div>
               </div>
             </Link>
           ))}
-        </div>
       </div>
+
+      {/* Quick Actions - Only for admins */}
+      {user?.role !== "service_tech" && (
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {quickActions.map((action) => (
+              <Link
+                key={action.name}
+                href={action.href}
+                className="card card-hover p-5 group"
+              >
+                <div className="flex items-start space-x-4">
+                  <div className={`p-2 rounded-lg ${
+                    action.color === 'primary' ? 'bg-primary-50 text-primary-600' :
+                    action.color === 'success' ? 'bg-success-50 text-success-600' :
+                    'bg-slate-100 text-slate-600'
+                  } group-hover:scale-110 transition-transform`}>
+                    {action.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900">
+                      {action.name}
+                    </p>
+                    <p className="text-sm text-slate-500 mt-0.5">
+                      {action.description}
+                    </p>
+                  </div>
+                  <svg className="w-5 h-5 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent Activity - Placeholder */}
       <div className="card p-6">

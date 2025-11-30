@@ -45,19 +45,26 @@ export async function syncCompaniesFromHubspot(filterByServicePlan = true) {
             filters: [
               {
                 propertyName: "has_service_plan",
-                operator: "EQ",
+                operator: "EQ" as any,
                 value: "true",
               },
             ],
           },
         ],
-        properties: ["name", "domain", "has_service_plan", "service_plan_tier"],
+        properties: ["name", "domain", "phone", "email", "has_service_plan", "service_plan_tier"],
         limit: 100,
       });
       companies = searchResponse.results;
     } else {
       // Fetch all companies (no filter)
-      const response = await client.crm.companies.basicApi.getPage(100);
+      const response = await client.crm.companies.basicApi.getPage(100, undefined, [
+        "name",
+        "domain",
+        "phone",
+        "email",
+        "has_service_plan",
+        "service_plan_tier",
+      ]);
       companies = response.results;
     }
     
@@ -171,26 +178,38 @@ export async function createTicketInHubspot(ticketData: {
     // Build associations array
     const associations: any[] = [];
     
-    // Add company association
+    // Add company association (type ID 16 for ticket-to-company)
     if (ticketData.companyId) {
       associations.push({
         to: { id: ticketData.companyId },
-        types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 16 }], // Company association
+        types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 16 }], // Ticket to Company
       });
     }
     
-    // Add contact association
+    // Add contact association (type ID 16 for ticket-to-contact)
     if (ticketData.contactId) {
       associations.push({
         to: { id: ticketData.contactId },
-        types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 16 }], // Contact association
+        types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 16 }], // Ticket to Contact
       });
     }
+    
+    console.log("Creating ticket in HubSpot with:", {
+      subject: ticketData.subject,
+      companyId: ticketData.companyId,
+      contactId: ticketData.contactId,
+      associationsCount: associations.length,
+    });
     
     // Create the ticket
     const ticket = await client.crm.tickets.basicApi.create({
       properties,
       associations: associations.length > 0 ? associations : undefined,
+    });
+    
+    console.log("Ticket created in HubSpot:", {
+      id: ticket.id,
+      subject: ticket.properties?.subject || ticket.properties?.hs_ticket_name,
     });
     
     return ticket;
@@ -308,28 +327,220 @@ export async function syncContactsFromHubspot() {
   try {
     const client = getHubspotClient();
     
-    // Fetch contacts from HubSpot
-    // We'll get all contacts and then filter by company association
+    // Fetch contacts from HubSpot with company associations
+    // Include custom properties to identify service techs
+    // Check for: Contact Type (dropdown), is_service_tech, user_role
     const response = await client.crm.contacts.basicApi.getPage(
       100,
       undefined,
-      ["firstname", "lastname", "email", "phone", "jobtitle"],
-      undefined,
-      ["companies"]
+      ["firstname", "lastname", "email", "phone", "jobtitle", "contact_type", "is_service_tech", "user_role"]
     );
     
-    return response.results.map((contact: any) => ({
+    // Fetch associations separately for each contact if needed
+    const contactsWithAssociations = await Promise.all(
+      response.results.map(async (contact: any) => {
+        try {
+          // Get company associations for this contact
+          const associations = await (client.crm.contacts as any).associationsApi.getAll(
+            contact.id,
+            "companies"
+          );
+          return {
+            ...contact,
+            associations: {
+              companies: {
+                results: associations.results || [],
+              },
+            },
+          };
+        } catch (err) {
+          // If associations fail, continue without them
+          console.warn(`Could not fetch associations for contact ${contact.id}:`, err);
+          return {
+            ...contact,
+            associations: { companies: { results: [] } },
+          };
+        }
+      })
+    );
+    
+    return contactsWithAssociations.map((contact: any) => ({
       hubspotId: contact.id,
       firstName: contact.properties.firstname || "",
       lastName: contact.properties.lastname || "",
       email: contact.properties.email || null,
       phone: contact.properties.phone || null,
       jobTitle: contact.properties.jobtitle || null,
+      contactType: contact.properties.contact_type || null, // User's existing "Contact Type" property
+      isServiceTech: contact.properties.is_service_tech === "true" || contact.properties.is_service_tech === true,
+      userRole: contact.properties.user_role || null, // Alternative: use user_role property
       properties: contact.properties,
       associations: contact.associations,
     }));
   } catch (error) {
     console.error("Error syncing contacts from HubSpot:", error);
+    throw error;
+  }
+}
+
+/**
+ * Search for companies in HubSpot by domain
+ * Returns matching companies with their properties
+ */
+export async function searchCompaniesByDomain(domain: string) {
+  try {
+    const client = getHubspotClient();
+    
+    // Search for companies with matching domain
+    const searchResponse = await client.crm.companies.searchApi.doSearch({
+      filterGroups: [
+        {
+          filters: [
+            {
+              propertyName: "domain",
+              operator: "EQ" as any,
+              value: domain,
+            },
+          ],
+        },
+      ],
+      properties: [
+        "name",
+        "domain",
+        "phone",
+        "email",
+        "has_service_plan",
+        "service_plan_tier",
+      ],
+      limit: 10,
+    });
+    
+    if (!searchResponse.results || searchResponse.results.length === 0) {
+      return [];
+    }
+    
+    return searchResponse.results.map((company: any) => ({
+      hubspotId: company.id,
+      name: company.properties.name || company.properties.domain || "Unknown Company",
+      domain: company.properties.domain || null,
+      email: company.properties.email || null,
+      phone: company.properties.phone || null,
+      hasServicePlan: company.properties.has_service_plan === "true",
+      servicePlanTier: company.properties.service_plan_tier || null,
+      properties: company.properties,
+    }));
+  } catch (error) {
+    console.error("Error searching companies by domain:", error);
+    throw error;
+  }
+}
+
+/**
+ * Create a company in HubSpot
+ * Checks if company already exists by name before creating
+ */
+export async function createCompanyInHubspot(companyData: {
+  name: string;
+  email?: string;
+  phone?: string;
+  domain?: string;
+  hasServicePlan?: boolean;
+  servicePlanTier?: string;
+}): Promise<{ id: string; exists: boolean }> {
+  try {
+    const client = getHubspotClient();
+    
+    // First, check if company already exists by name
+    const searchResponse = await client.crm.companies.searchApi.doSearch({
+      filterGroups: [
+        {
+          filters: [
+            {
+              propertyName: "name",
+              operator: "EQ" as any,
+              value: companyData.name,
+            },
+          ],
+        },
+      ],
+      properties: ["name", "domain"],
+      limit: 1,
+    });
+    
+    if (searchResponse.results && searchResponse.results.length > 0) {
+      // Company already exists
+      return {
+        id: searchResponse.results[0].id,
+        exists: true,
+      };
+    }
+    
+    // Create new company
+    const properties: any = {
+      name: companyData.name,
+    };
+    
+    if (companyData.email) {
+      properties.email = companyData.email;
+    }
+    
+    if (companyData.phone) {
+      properties.phone = companyData.phone;
+    }
+    
+    if (companyData.domain) {
+      properties.domain = companyData.domain;
+    }
+    
+    // Set service plan properties if provided
+    if (companyData.hasServicePlan !== undefined) {
+      properties.has_service_plan = companyData.hasServicePlan.toString();
+    }
+    
+    if (companyData.servicePlanTier) {
+      properties.service_plan_tier = companyData.servicePlanTier;
+    }
+    
+    const company = await client.crm.companies.basicApi.create({
+      properties,
+    });
+    
+    return {
+      id: company.id,
+      exists: false,
+    };
+  } catch (error: any) {
+    console.error("Error creating company in HubSpot:", error);
+    // If error is because company already exists, try to find it
+    if (error.message?.includes("already exists") || error.statusCode === 409) {
+      try {
+        const hubspotClient = getHubspotClient();
+        const searchResponse = await hubspotClient.crm.companies.searchApi.doSearch({
+          filterGroups: [
+            {
+              filters: [
+                {
+                  propertyName: "name",
+                  operator: "EQ" as any,
+                  value: companyData.name,
+                },
+              ],
+            },
+          ],
+          properties: ["name"],
+          limit: 1,
+        });
+        
+        if (searchResponse.results && searchResponse.results.length > 0) {
+          return {
+            id: searchResponse.results[0].id,
+            exists: true,
+          };
+        }
+      } catch (searchError) {
+        // Fall through to throw original error
+      }
+    }
     throw error;
   }
 }
@@ -363,9 +574,9 @@ export async function createContactInHubspot(contactData: {
       associations: contactData.companyId ? [
         {
           to: { id: contactData.companyId },
-          types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 1 }], // Company association
+          types: [{ associationCategory: "HUBSPOT_DEFINED" as any, associationTypeId: 1 }], // Company association
         },
-      ] : undefined,
+      ] as any : undefined,
     });
     
     return contact;
@@ -373,6 +584,130 @@ export async function createContactInHubspot(contactData: {
     console.error("Error creating contact in HubSpot:", error);
     throw error;
   }
+}
+
+/**
+ * Create a call activity in HubSpot
+ * Logs a phone call to HubSpot and associates it with a contact/company/ticket
+ */
+export async function createCallActivityInHubspot(callData: {
+  contactId?: string;
+  companyId?: string;
+  ticketId?: string;
+  phoneNumber: string;
+  direction: "INBOUND" | "OUTBOUND";
+  duration?: number; // Duration in seconds
+  notes?: string;
+  subject?: string;
+}): Promise<{ id: string } | null> {
+  try {
+    const client = getHubspotClient();
+    
+    // HubSpot uses Engagements API for call logging
+    // Create a note engagement that represents the call
+    
+    // Build associations
+    const associations: any[] = [];
+    
+    if (callData.contactId) {
+      associations.push({
+        to: { id: callData.contactId },
+        types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 3 }], // Contact association
+      });
+    }
+    
+    if (callData.companyId) {
+      associations.push({
+        to: { id: callData.companyId },
+        types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 279 }], // Company association
+      });
+    }
+    
+    if (callData.ticketId) {
+      associations.push({
+        to: { id: callData.ticketId },
+        types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 16 }], // Ticket association
+      });
+    }
+    
+    // Create a note engagement for the call
+    const noteBody = callData.notes 
+      ? `Phone call to ${callData.phoneNumber}${callData.duration ? ` (Duration: ${callData.duration}s)` : ""}\n\n${callData.notes}`
+      : `Phone call to ${callData.phoneNumber}${callData.duration ? ` (Duration: ${callData.duration}s)` : ""}`;
+    
+    // Try to create engagement (requires Engagements scope)
+    // If this fails, we'll continue without logging - calls will still work
+    try {
+      const engagement = await (client.crm as any).engagements?.basicApi?.create({
+        engagement: {
+          type: "NOTE",
+          active: true,
+        },
+        associations: associations.length > 0 ? associations : undefined,
+        metadata: {
+          body: noteBody,
+        },
+      });
+      
+      console.log("Call activity logged to HubSpot:", {
+        engagementId: engagement.id,
+        phoneNumber: callData.phoneNumber,
+        direction: callData.direction,
+      });
+      
+      return { id: engagement.id };
+    } catch (engagementError: any) {
+      // If engagements API fails (missing scope), try to add a note to the ticket instead
+      if (callData.ticketId) {
+        try {
+          // Add call info as a note in the ticket description or update ticket
+          const ticket = await client.crm.tickets.basicApi.getById(callData.ticketId, ["content"]);
+          const existingContent = ticket.properties?.content || "";
+          const callNote = `\n\n[Call Log] ${new Date().toLocaleString()}: ${callData.direction} call to ${callData.phoneNumber}${callData.duration ? ` (${callData.duration}s)` : ""}${callData.notes ? `\nNotes: ${callData.notes}` : ""}`;
+          
+          await client.crm.tickets.basicApi.update(callData.ticketId, {
+            properties: {
+              content: existingContent + callNote,
+            },
+          });
+          
+          console.log("Call logged to ticket notes (Engagements scope not available)");
+          return { id: `ticket-note-${callData.ticketId}` };
+        } catch (ticketError) {
+          console.warn("Could not log call to ticket either:", ticketError);
+        }
+      }
+      
+      // If all logging fails, just log a warning but don't block the call
+      console.warn("Call logging unavailable - Engagements scope may not be configured. Call will proceed anyway.");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error in call logging function:", error);
+    // Don't throw - allow call to proceed even if logging fails
+    return null;
+  }
+}
+
+/**
+ * Get HubSpot calling interface URL
+ * Returns a URL that can be used to initiate a call through HubSpot's calling interface
+ * Note: HubSpot doesn't have a direct calling URL, so we'll open the contact page
+ * or use tel: links as fallback
+ */
+export function getHubspotCallingUrl(phoneNumber: string, contactId?: string, ticketId?: string): string | null {
+  // HubSpot doesn't have a direct "calling" URL endpoint
+  // Instead, we can:
+  // 1. Open the contact page (if we have contactId) - user can initiate call from there
+  // 2. Return null to use tel: links as fallback
+  
+  if (contactId) {
+    // Open the contact page in HubSpot - user can initiate call from there
+    return `https://app.hubspot.com/contacts/${contactId}`;
+  }
+  
+  // If no contact ID, return null to use tel: link fallback
+  return null;
 }
 
 

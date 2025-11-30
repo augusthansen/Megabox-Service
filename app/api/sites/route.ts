@@ -28,19 +28,38 @@ export async function GET(request: NextRequest) {
             name: true,
           },
         },
-        _count: {
+        primaryContact: {
           select: {
-            machines: true,
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        machines: {
+          select: {
+            id: true,
           },
         },
       },
     });
 
-    return NextResponse.json(sites);
-  } catch (error) {
+    // Manually calculate counts to avoid Prisma _count issues
+    const sitesWithCounts = sites.map(site => ({
+      ...site,
+      _count: {
+        machines: site.machines.length,
+      },
+    }));
+
+    return NextResponse.json(sitesWithCounts);
+  } catch (error: any) {
     console.error("Error fetching sites:", error);
+    console.error("Error details:", {
+      message: error?.message,
+      stack: error?.stack,
+    });
     return NextResponse.json(
-      { error: "Failed to fetch sites" },
+      { error: "Failed to fetch sites", details: error?.message || "Unknown error" },
       { status: 500 }
     );
   }
@@ -50,7 +69,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, address, city, state, zipCode, companyId } = body;
+    const { name, address, city, state, zipCode, companyId, primaryContactId } = body;
 
     // Validate required fields
     if (!name || !companyId) {
@@ -58,6 +77,21 @@ export async function POST(request: NextRequest) {
         { error: "Site name and company ID are required" },
         { status: 400 }
       );
+    }
+
+    // If primaryContactId is provided, verify the user belongs to the company
+    if (primaryContactId) {
+      const user = await prisma.user.findUnique({
+        where: { id: primaryContactId },
+        select: { companyId: true },
+      });
+
+      if (!user || user.companyId !== companyId) {
+        return NextResponse.json(
+          { error: "Primary contact must belong to the same company" },
+          { status: 400 }
+        );
+      }
     }
 
     // Create the site
@@ -69,6 +103,7 @@ export async function POST(request: NextRequest) {
         state: state || null,
         zipCode: zipCode || null,
         companyId,
+        primaryContactId: primaryContactId || null,
       },
       include: {
         company: {
@@ -77,15 +112,30 @@ export async function POST(request: NextRequest) {
             name: true,
           },
         },
-        _count: {
+        primaryContact: {
           select: {
-            machines: true,
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        machines: {
+          select: {
+            id: true,
           },
         },
       },
     });
 
-    return NextResponse.json(site, { status: 201 });
+    // Manually calculate count
+    const siteWithCount = {
+      ...site,
+      _count: {
+        machines: site.machines.length,
+      },
+    };
+
+    return NextResponse.json(siteWithCount, { status: 201 });
   } catch (error) {
     console.error("Error creating site:", error);
     return NextResponse.json(

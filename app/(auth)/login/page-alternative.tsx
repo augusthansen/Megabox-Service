@@ -5,7 +5,7 @@ import { useState } from "react";
 
 /**
  * Alternative Login Page - Posts directly to NextAuth API
- * 
+ *
  * This version posts directly to the NextAuth endpoint instead of using signIn()
  * This might fix the GET request error.
  */
@@ -76,7 +76,10 @@ export default function LoginPageAlternative() {
           )}
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
               Email address
             </label>
             <input
@@ -92,7 +95,10 @@ export default function LoginPageAlternative() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
               Password
             </label>
             <input
@@ -128,5 +134,3 @@ export default function LoginPageAlternative() {
     </div>
   );
 }
-
-

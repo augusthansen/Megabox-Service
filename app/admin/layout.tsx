@@ -23,6 +23,7 @@ export default function AdminLayout({
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     // Check if user is logged in
@@ -38,6 +39,17 @@ export default function AdminLayout({
     }
   }, [router]);
 
+  // Close sidebar when clicking outside on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -51,17 +63,23 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
-      <AdminSidebar />
+      <AdminSidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)}
+      />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Top Bar */}
-        <TopBar user={user} />
+        <TopBar 
+          user={user} 
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+        />
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>

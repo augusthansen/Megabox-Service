@@ -28,12 +28,14 @@ The server should be running at `http://localhost:3000`
 ### Step 3: Log In
 
 Use the admin credentials we created:
+
 - **Email:** `admin@megaboxsupply.com`
 - **Password:** `admin123`
 
 ### Step 4: See the Admin Dashboard
 
 After logging in, you should see:
+
 - Welcome message with your name and role
 - A "Sign out" button in the top right
 - Information about what's working
@@ -53,15 +55,18 @@ After logging in, you should see:
 ## 🐛 Troubleshooting
 
 ### "Invalid email or password"
+
 - Make sure you're using: `admin@megaboxsupply.com` / `admin123`
 - Check that the database seed ran successfully
 
 ### "Something went wrong"
+
 - Check the terminal for error messages
 - Make sure the database is connected
 - Verify `.env.local` has the correct `DATABASE_URL`
 
 ### Page won't load
+
 - Make sure `npm run dev` is running
 - Check the terminal for errors
 - Try refreshing the page
@@ -82,10 +87,9 @@ After logging in, you should see:
 ## 🎉 Next Steps
 
 Once login is working, we can:
+
 1. Build the admin navigation sidebar
 2. Create customer management pages
 3. Add more features to the dashboard
 
 **Ready to test?** Open `http://localhost:3000` and try logging in!
-
-

@@ -9,6 +9,7 @@ This usually means one of these things:
 Supabase might be blocking connections from your IP address.
 
 **To fix:**
+
 1. In Supabase, go to **Settings** → **Database**
 2. Look for **"Network restrictions"** or **"Connection pooling"**
 3. Find **"Allowed IP addresses"** or **"IP allowlist"**
@@ -29,10 +30,12 @@ Instead of building it manually, let's get it directly from Supabase:
 ### 3. Try Connection Pooling
 
 Supabase has two connection methods:
+
 - **Direct connection** (port 5432) - what we tried
 - **Connection pooling** (port 6543) - sometimes more reliable
 
 **To get the pooling connection string:**
+
 1. In Database settings, look for **"Connection pooling"**
 2. Copy that connection string instead
 3. It uses port **6543** instead of 5432
@@ -42,17 +45,20 @@ Supabase has two connection methods:
 ## 🎯 What to Do Next
 
 **Option 1: Check IP Restrictions (Try this first)**
+
 1. Go to Supabase → Settings → Database
 2. Look for IP restrictions/allowlist
 3. Add your IP or allow all IPs for development
 4. Tell me: "I've updated IP restrictions"
 
 **Option 2: Get Exact Connection String**
+
 1. Go to Settings → Database → Connection string → URI tab
 2. Copy the full connection string
 3. Tell me: "Here's my connection string: [paste it]"
 
 **Option 3: Try Connection Pooling**
+
 1. Look for "Connection pooling" in Database settings
 2. Copy that connection string
 3. Tell me: "Here's my pooling connection string: [paste it]"
@@ -62,10 +68,9 @@ Supabase has two connection methods:
 ## 💡 Quick Check
 
 Can you see a section in Database settings about:
+
 - "Network restrictions"?
 - "IP allowlist"?
 - "Connection pooling"?
 
 Let me know what you find!
-
-

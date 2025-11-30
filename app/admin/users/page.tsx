@@ -19,6 +19,7 @@ interface User {
     name: string;
   } | null;
   hubspotId: string | null;
+  phone: string | null;
   isActive: boolean;
   createdAt: string;
 }
@@ -34,6 +35,19 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState<string | null>(
+    null
+  );
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "service_tech",
+    companyId: "",
+    phone: "",
+    isActive: true,
+  });
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -49,13 +63,22 @@ export default function UsersPage() {
 
   const fetchUsers = async () => {
     try {
+      setLoading(true);
       const response = await fetch("/api/users");
       if (response.ok) {
         const data = await response.json();
+        console.log("Fetched users:", data);
         setUsers(data);
+      } else {
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
+        console.error("Failed to fetch users:", response.status, errorData);
+        alert(`Failed to load users: ${errorData.error || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error fetching users:", error);
+      alert("Error loading users. Check console for details.");
     } finally {
       setLoading(false);
     }
@@ -125,6 +148,109 @@ export default function UsersPage() {
     }
   };
 
+  const handleResetPassword = async (userId: string, userEmail: string) => {
+    const newPassword = prompt(
+      `Reset password for ${userEmail}\n\nEnter new password:`
+    );
+
+    if (!newPassword || newPassword.length < 6) {
+      if (newPassword !== null) {
+        alert("Password must be at least 6 characters long");
+      }
+      return;
+    }
+
+    setResettingPassword(userId);
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          password: newPassword,
+        }),
+      });
+
+      if (response.ok) {
+        alert(
+          `Password reset successfully for ${userEmail}\n\nNew password: ${newPassword}\n\nPlease share this with the user.`
+        );
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to reset password");
+      }
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      alert("Something went wrong while resetting password");
+    } finally {
+      setResettingPassword(null);
+    }
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setEditFormData({
+      name: user.name,
+      email: user.email,
+      password: "", // Don't pre-fill password
+      role: user.role,
+      companyId: user.companyId || "",
+      phone: user.phone || "",
+      isActive: user.isActive,
+    });
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+
+    try {
+      const updateData: any = {
+        name: editFormData.name,
+        email: editFormData.email,
+        role: editFormData.role,
+        companyId: editFormData.companyId || null,
+        phone: editFormData.phone || null,
+        isActive: editFormData.isActive,
+      };
+
+      // Only include password if it was provided
+      if (editFormData.password && editFormData.password.length > 0) {
+        updateData.password = editFormData.password;
+      }
+
+      const response = await fetch(`/api/users/${editingUser.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (response.ok) {
+        setEditingUser(null);
+        setEditFormData({
+          name: "",
+          email: "",
+          password: "",
+          role: "service_tech",
+          companyId: "",
+          phone: "",
+          isActive: true,
+        });
+        fetchUsers();
+        alert("User updated successfully!");
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to update user");
+      }
+    } catch (error) {
+      console.error("Error updating user:", error);
+      alert("Something went wrong");
+    }
+  };
+
   const handleSyncFromHubspot = async () => {
     setSyncing(true);
     try {
@@ -135,13 +261,22 @@ export default function UsersPage() {
       const data = await response.json();
 
       if (response.ok) {
-        alert(
+        let message =
           `Sync complete!\n\n` +
-            `✓ Synced: ${data.synced} new contacts\n` +
-            `✓ Updated: ${data.updated} existing contacts\n` +
-            `⚠ Skipped: ${data.skipped} contacts\n` +
-            `✗ Errors: ${data.errors}`
-        );
+          `✓ Synced: ${data.synced} new contacts\n` +
+          `✓ Updated: ${data.updated} existing contacts\n` +
+          `⚠ Skipped: ${data.skipped} contacts\n` +
+          `✗ Errors: ${data.errors}`;
+
+        // Show error details if there are errors
+        if (data.errors > 0 && data.details?.errors) {
+          message += `\n\nError details:\n`;
+          data.details.errors.forEach((err: any, index: number) => {
+            message += `${index + 1}. Contact ${err.id}: ${err.error}\n`;
+          });
+        }
+
+        alert(message);
         fetchUsers(); // Refresh the list
       } else {
         alert(data.error || "Failed to sync from HubSpot");
@@ -177,7 +312,10 @@ export default function UsersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-slate-500">Loading users...</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-slate-500">Loading users...</p>
+        </div>
       </div>
     );
   }
@@ -221,6 +359,206 @@ export default function UsersPage() {
           </button>
         </div>
       </div>
+
+      {/* Edit User Form */}
+      {editingUser && (
+        <div className="card p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">
+            Edit User: {editingUser.name}
+          </h3>
+          <form onSubmit={handleUpdateUser} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="edit-name"
+                  className="block text-sm font-medium text-slate-700 mb-2"
+                >
+                  Full Name *
+                </label>
+                <input
+                  id="edit-name"
+                  type="text"
+                  required
+                  value={editFormData.name}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, name: e.target.value })
+                  }
+                  className="input"
+                  placeholder="John Doe"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="edit-email"
+                  className="block text-sm font-medium text-slate-700 mb-2"
+                >
+                  Email Address *
+                </label>
+                <input
+                  id="edit-email"
+                  type="email"
+                  required
+                  value={editFormData.email}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, email: e.target.value })
+                  }
+                  className="input"
+                  placeholder="john@example.com"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="edit-phone"
+                  className="block text-sm font-medium text-slate-700 mb-2"
+                >
+                  Phone Number
+                </label>
+                <input
+                  id="edit-phone"
+                  type="tel"
+                  value={editFormData.phone}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, phone: e.target.value })
+                  }
+                  className="input"
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="edit-role"
+                  className="block text-sm font-medium text-slate-700 mb-2"
+                >
+                  Role *
+                </label>
+                <select
+                  id="edit-role"
+                  value={editFormData.role}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, role: e.target.value })
+                  }
+                  className="input"
+                >
+                  <option value="service_tech">Service Tech</option>
+                  <option value="customer_admin">Customer Admin</option>
+                  <option value="customer_tech">Customer Tech</option>
+                  <option value="super_admin">Super Admin</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="edit-password"
+                  className="block text-sm font-medium text-slate-700 mb-2"
+                >
+                  New Password (leave blank to keep current)
+                </label>
+                <input
+                  id="edit-password"
+                  type="password"
+                  value={editFormData.password}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      password: e.target.value,
+                    })
+                  }
+                  className="input"
+                  placeholder="••••••••"
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  Only enter a password if you want to change it
+                </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="edit-status"
+                  className="block text-sm font-medium text-slate-700 mb-2"
+                >
+                  Status *
+                </label>
+                <select
+                  id="edit-status"
+                  value={editFormData.isActive ? "active" : "inactive"}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      isActive: e.target.value === "active",
+                    })
+                  }
+                  className="input"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            {(editFormData.role === "customer_admin" ||
+              editFormData.role === "customer_tech") && (
+              <div>
+                <label
+                  htmlFor="edit-companyId"
+                  className="block text-sm font-medium text-slate-700 mb-2"
+                >
+                  Company * (Required for customer roles)
+                </label>
+                <select
+                  id="edit-companyId"
+                  value={editFormData.companyId}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      companyId: e.target.value,
+                    })
+                  }
+                  className="input"
+                  required
+                >
+                  <option value="">Select a company...</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingUser(null);
+                  setEditFormData({
+                    name: "",
+                    email: "",
+                    password: "",
+                    role: "service_tech",
+                    companyId: "",
+                    phone: "",
+                    isActive: true,
+                  });
+                }}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary">
+                Update User
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Add User Form */}
       {showAddForm && (
@@ -444,6 +782,25 @@ export default function UsersPage() {
                   </td>
                   <td>
                     <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleEditUser(user)}
+                        className="text-sm text-primary-600 hover:text-primary-700"
+                        title="Edit user"
+                      >
+                        Edit
+                      </button>
+                      <span className="text-slate-300">|</span>
+                      <button
+                        onClick={() => handleResetPassword(user.id, user.email)}
+                        disabled={resettingPassword === user.id}
+                        className="text-sm text-primary-600 hover:text-primary-700 disabled:opacity-50"
+                        title="Reset password"
+                      >
+                        {resettingPassword === user.id
+                          ? "Resetting..."
+                          : "Reset Password"}
+                      </button>
+                      <span className="text-slate-300">|</span>
                       <button
                         onClick={() => toggleUserStatus(user.id, user.isActive)}
                         className="text-sm text-slate-600 hover:text-slate-900"

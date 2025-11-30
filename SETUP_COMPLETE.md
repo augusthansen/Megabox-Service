@@ -64,18 +64,18 @@ cp env.example .env.local
 Then edit `.env.local` with your actual values:
 
 **Required for Phase 1:**
+
 - `DATABASE_URL` - Your Supabase PostgreSQL connection string
   - Get from: Supabase Dashboard > Project Settings > Database > Connection string
   - Format: `postgresql://postgres:[PASSWORD]@[PROJECT].supabase.co:5432/postgres`
-  
 - `NEXTAUTH_SECRET` - Generate a random secret:
   ```bash
   openssl rand -base64 32
   ```
-  
 - `NEXTAUTH_URL` - `http://localhost:3000` (for development)
 
 **Optional (for later phases):**
+
 - `HUBSPOT_API_KEY` - For HubSpot integration (Phase 6)
 - `DAILY_API_KEY` - For video calling (Phase 4)
 - Other keys as needed
@@ -97,6 +97,7 @@ npm run db:seed
 ```
 
 This will create:
+
 - All database tables
 - Initial admin user:
   - **Email:** admin@megaboxsupply.com
@@ -126,12 +127,14 @@ This opens a visual database browser at `http://localhost:5555`
 Now that the foundation is set up, you need to build:
 
 1. **Authentication System** (NextAuth.js)
+
    - Login page
    - Session management
    - Protected routes
    - Two-factor authentication setup
 
 2. **Admin Panel Foundation**
+
    - Dashboard layout with navigation
    - Sidebar component
    - Top bar with user menu
@@ -171,6 +174,7 @@ npm run db:studio    # Open Prisma Studio
 ## 🎯 Success Criteria for Phase 1
 
 You'll know Phase 1 is complete when:
+
 - ✅ Next.js app runs locally (localhost:3000)
 - ✅ Database has all tables (via Prisma)
 - ✅ Admin user can log in successfully
@@ -192,6 +196,7 @@ You'll know Phase 1 is complete when:
 ## 🆘 Need Help?
 
 If you encounter any issues:
+
 1. Check that `.env.local` is properly configured
 2. Verify your Supabase database is accessible
 3. Ensure all dependencies are installed (`npm install`)
@@ -200,5 +205,3 @@ If you encounter any issues:
 ---
 
 **Ready to continue?** The next step is to implement the authentication system with NextAuth.js!
-
-

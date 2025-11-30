@@ -20,6 +20,7 @@ The connection string format depends on your project's region. Can you check:
 3. Common regions: `us-east-1`, `us-west-1`, `eu-west-1`, etc.
 
 Or the region might be shown in:
+
 - Project overview/dashboard
 - API settings page
 
@@ -31,5 +32,3 @@ Or the region might be shown in:
 2. **What region is your project in?** (Check Settings → General)
 
 With the region, I can build the correct pooling connection string!
-
-

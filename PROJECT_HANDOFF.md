@@ -390,6 +390,12 @@ See `HUBSPOT_SETUP.md` for detailed instructions on:
 - [ ] Add customer portal (Phase 3)
 - [ ] Add tech dashboard (Phase 4)
 - [ ] Add remote access functionality (Phase 6)
+- [ ] **Map Integration** (Phase 3) - Add interactive map showing site locations with pins
+  - Display all customer sites on a map (e.g., Google Maps, Mapbox)
+  - Show site details when clicking pins
+  - Useful for techs to visualize service locations
+  - Helpful for customers to see their site locations
+  - Consider adding route planning for techs
 
 ### Long Term
 
@@ -505,6 +511,7 @@ npm run start            # Start production server
 - [ ] Create tickets
 - [ ] View invoices
 - [ ] Machine status dashboard
+- [ ] Interactive map with site location pins
 
 #### Phase 4: Tech Dashboard (Planned)
 
@@ -592,6 +599,7 @@ npm run start            # Start production server
    - Site details (address, contacts, timezone)
    - Floor maps
    - Site-specific settings
+   - **Future: Interactive map with site location pins** (see TODO section)
 
 3. **Machine Management**
 

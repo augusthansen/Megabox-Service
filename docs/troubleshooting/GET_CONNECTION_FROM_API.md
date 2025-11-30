@@ -15,6 +15,7 @@ Since your project is active, let's find the connection string in API settings:
 ## What to Look For:
 
 In the API settings page, you might see:
+
 - A **"Database"** section with connection parameters
 - **"Connection string"** or **"Database URL"**
 - Individual fields like:
@@ -35,10 +36,9 @@ In the API settings page, you might see:
 ## 🎯 What I Need:
 
 Please check **Settings → API** and tell me:
+
 - Do you see a "Database" section?
 - Do you see any connection string or connection parameters?
 - What information is shown there?
 
 This will help me build the correct connection string!
-
-

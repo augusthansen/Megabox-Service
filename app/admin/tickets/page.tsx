@@ -92,14 +92,26 @@ export default function TicketsPage() {
     // Get current user from sessionStorage
     const userData = sessionStorage.getItem("user");
     if (userData) {
-      setCurrentUser(JSON.parse(userData));
+      try {
+        const user = JSON.parse(userData);
+        console.log("Current user loaded:", { id: user.id, role: user.role, name: user.name });
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        console.warn("User data:", userData);
+      }
+    } else {
+      console.warn("No user data found in sessionStorage");
     }
   }, []);
 
   useEffect(() => {
-    fetchTickets();
+    // Only fetch tickets after currentUser is loaded
+    if (currentUser) {
+      fetchTickets();
+    }
     fetchCompanies();
-  }, [filters, machineIdParam]);
+  }, [filters, machineIdParam, currentUser]);
 
   useEffect(() => {
     if (formData.companyId) {
@@ -126,12 +138,22 @@ export default function TicketsPage() {
       if (filters.status) params.append("status", filters.status);
       if (filters.priority) params.append("priority", filters.priority);
       if (machineIdParam) params.append("machineId", machineIdParam);
+      // For service techs, only show tickets assigned to them
+      if (currentUser?.role === "service_tech" && currentUser?.id) {
+        params.append("assignedToId", currentUser.id);
+      }
       if (params.toString()) url += "?" + params.toString();
 
+      console.log("Fetching tickets from:", url);
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
+        console.log(`Received ${data.length} tickets`);
         setTickets(data);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        console.error("Error fetching tickets:", errorData);
+        alert(`Failed to load tickets: ${errorData.error || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error fetching tickets:", error);
@@ -242,6 +264,49 @@ export default function TicketsPage() {
     }
   };
 
+  const handleSyncToHubspot = async () => {
+    if (!confirm("This will sync all local tickets that don't have a HubSpot ID to HubSpot. Continue?")) {
+      return;
+    }
+
+    setSyncing(true);
+    try {
+      const response = await fetch("/api/tickets/sync-to-hubspot", {
+        method: "POST",
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        if (data.synced === 0) {
+          alert("All tickets are already synced to HubSpot!");
+        } else {
+          let message = `Sync complete!\n\n✅ Synced: ${data.synced} tickets to HubSpot\n❌ Errors: ${data.errors}`;
+          
+          if (data.details?.synced && data.details.synced.length > 0) {
+            message += `\n\nSynced tickets:\n${data.details.synced.map((s: any) => `- ${s.ticket} (HubSpot ID: ${s.hubspotId})`).join("\n")}`;
+          }
+          
+          if (data.errors > 0 && data.details?.errors) {
+            message += `\n\nErrors:\n${data.details.errors.map((e: any) => `- ${e.ticket}: ${e.error}${e.details ? ` (${e.details})` : ""}`).join("\n")}`;
+          }
+          
+          alert(message);
+        }
+        fetchTickets(); // Refresh the list
+      } else {
+        const errorMsg = data.error || data.details || "Failed to sync to HubSpot";
+        alert(`Error: ${errorMsg}\n\nCheck the browser console and server logs for details.`);
+        console.error("Sync error response:", data);
+      }
+    } catch (error) {
+      console.error("Error syncing to HubSpot:", error);
+      alert("Something went wrong while syncing");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -257,27 +322,44 @@ export default function TicketsPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Tickets</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Manage service tickets and support requests
+            {currentUser?.role === "service_tech" 
+              ? "View and manage tickets assigned to you"
+              : "Manage service tickets and support requests"}
           </p>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={handleSyncFromHubspot}
-            disabled={syncing}
-            className="btn-success disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-          >
-            <svg className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {syncing ? "Syncing..." : "Sync from HubSpot"}
-          </button>
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="btn-primary"
-          >
-            {showAddForm ? "Cancel" : "+ Create Ticket"}
-          </button>
-        </div>
+        {/* Only show admin actions for non-service-tech users */}
+        {currentUser?.role !== "service_tech" && (
+          <div className="flex gap-3">
+            <button
+              onClick={handleSyncToHubspot}
+              disabled={syncing}
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              title="Sync local tickets to HubSpot"
+            >
+              <svg className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              {syncing ? "Syncing..." : "Sync to HubSpot"}
+            </button>
+            <button
+              onClick={handleSyncFromHubspot}
+              disabled={syncing}
+              className="btn-success disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              title="Sync tickets from HubSpot to app"
+            >
+              <svg className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {syncing ? "Syncing..." : "Sync from HubSpot"}
+            </button>
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="btn-primary"
+            >
+              {showAddForm ? "Cancel" : "+ Create Ticket"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -322,8 +404,8 @@ export default function TicketsPage() {
         </div>
       </div>
 
-      {/* Create Ticket Form */}
-      {showAddForm && (
+      {/* Create Ticket Form - Only for admins */}
+      {showAddForm && currentUser?.role !== "service_tech" && (
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Create New Ticket</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -467,19 +549,25 @@ export default function TicketsPage() {
       )}
 
       {/* Tickets Table */}
-      <div className="table-container">
+      <div className="table-container overflow-x-auto">
         {tickets.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-slate-500 mb-4">No tickets found</p>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="btn-primary"
-            >
-              Create Your First Ticket
-            </button>
+            <p className="text-slate-500 mb-4">
+              {currentUser?.role === "service_tech" 
+                ? "No tickets assigned to you. Tickets must be assigned to you by an administrator to appear here."
+                : "No tickets found"}
+            </p>
+            {currentUser?.role !== "service_tech" && (
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="btn-primary"
+              >
+                Create Your First Ticket
+              </button>
+            )}
           </div>
         ) : (
-          <table className="table">
+          <table className="table min-w-full">
             <thead>
               <tr>
                 <th>Ticket #</th>
@@ -511,7 +599,11 @@ export default function TicketsPage() {
                 };
 
                 return (
-                  <tr key={ticket.id}>
+                  <tr 
+                    key={ticket.id}
+                    className="hover:bg-primary-50 cursor-pointer transition-colors group"
+                    onClick={() => router.push(`/admin/tickets/${ticket.id}`)}
+                  >
                     <td>
                       <div className="font-mono text-sm font-medium text-slate-900">
                         {ticket.ticketNumber}
@@ -529,6 +621,7 @@ export default function TicketsPage() {
                       <Link
                         href={`/admin/customers/${ticket.company.id}`}
                         className="text-primary-600 hover:text-primary-700"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {ticket.company.name}
                       </Link>
@@ -537,6 +630,7 @@ export default function TicketsPage() {
                       <Link
                         href={`/admin/sites/${ticket.site.id}`}
                         className="text-slate-600 hover:text-slate-900"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {ticket.site.name}
                       </Link>
@@ -546,6 +640,7 @@ export default function TicketsPage() {
                         <Link
                           href={`/admin/machines/${ticket.machine.id}`}
                           className="text-slate-600 hover:text-slate-900"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {ticket.machine.name}
                         </Link>
@@ -563,11 +658,11 @@ export default function TicketsPage() {
                         {ticket.status.replace("_", " ")}
                       </span>
                     </td>
-                    <td>
-                      <div className="flex items-center gap-3">
+                    <td className="whitespace-nowrap">
+                      <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                         <Link
                           href={`/admin/tickets/${ticket.id}`}
-                          className="text-primary-600 hover:text-primary-700 font-medium"
+                          className="text-primary-600 hover:text-primary-700 font-medium underline group-hover:text-primary-700"
                         >
                           View Details →
                         </Link>

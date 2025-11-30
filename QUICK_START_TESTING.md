@@ -9,13 +9,15 @@
 3. **Press Enter**
 
 **What you should see:**
+
 - A page with "Megabox Service Portal" as the title
 - Subtitle: "Remote service management platform for mail inserter machines"
 - Clean, centered layout
 
 **✅ If you see this:** Great! Your Next.js app is working!
 
-**❌ If you see an error:** 
+**❌ If you see an error:**
+
 - Check the terminal where `npm run dev` is running
 - Look for red error messages
 - Share the error with me
@@ -61,15 +63,19 @@ You can test the database connection later. For now, the basic app works without
 Once `.env.local` is set up with your Supabase URL:
 
 1. **Push the database schema:**
+
    ```bash
    npm run db:push
    ```
+
    This creates all the tables in your database.
 
 2. **Create the admin user:**
+
    ```bash
    npm run db:seed
    ```
+
    This creates: `admin@megaboxsupply.com` / `admin123`
 
 3. **Verify it worked:**
@@ -96,11 +102,13 @@ Once `.env.local` is set up with your Supabase URL:
 ## 🎯 What to Do Right Now
 
 **Do this first:**
+
 1. Open `http://localhost:3000` in your browser
 2. Confirm you see the "Megabox Service Portal" page
 3. Tell me: "I can see the home page!" or share any errors
 
 **Then we'll:**
+
 - Set up the database connection (if you have Supabase ready)
 - Or continue building features that don't need the database yet
 
@@ -109,14 +117,17 @@ Once `.env.local` is set up with your Supabase URL:
 ## 🆘 Common Issues
 
 **"Can't connect to localhost:3000"**
+
 - Make sure `npm run dev` is still running in your terminal
 - Check for error messages in the terminal
 
 **"Page shows an error"**
+
 - Look at the terminal output
 - Share the error message with me
 
 **"I don't have Supabase set up yet"**
+
 - That's totally fine! The basic app works without it
 - We can set up the database later
 - For now, just confirm the home page works
@@ -133,5 +144,3 @@ Once `.env.local` is set up with your Supabase URL:
 ---
 
 **Ready?** Open `http://localhost:3000` and let me know what you see! 🚀
-
-

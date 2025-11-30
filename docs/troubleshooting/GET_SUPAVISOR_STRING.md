@@ -19,6 +19,7 @@ postgres://[DB-USER].[PROJECT-REF]:[PASSWORD]@[DB-REGION].pooler.supabase.com:54
 ## Alternative: Check Connection Info
 
 If you don't see a "Connect" button:
+
 - Look for **"Connection info"** or **"Database connection"** in the dashboard
 - Or check if there's a connection string shown on the main project page
 
@@ -32,5 +33,3 @@ If you don't see a "Connect" button:
 4. **Copy it and share it with me**
 
 This is the connection string we need for Prisma!
-
-

@@ -8,6 +8,7 @@
 ## The Fix
 
 I've updated the auth config to:
+
 - Set error page to redirect back to login (prevents GET requests)
 - Added debug mode to see what's happening
 
@@ -18,5 +19,3 @@ I've updated the auth config to:
 3. **Try logging in again**
 
 Let me update the environment variable to use a relative URL or match the port.
-
-

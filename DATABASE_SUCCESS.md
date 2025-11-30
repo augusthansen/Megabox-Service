@@ -4,6 +4,7 @@
 
 1. **✅ Connected to Supabase** - Using Session Pooler connection
 2. **✅ Created all database tables** - All 11 tables from the schema are now in your database:
+
    - Users
    - Companies
    - Sites
@@ -32,6 +33,7 @@ npm run db:studio
 ```
 
 This opens a visual database browser at `http://localhost:5555` where you can:
+
 - See all your tables
 - View the admin user we just created
 - Browse and edit data
@@ -43,11 +45,13 @@ This opens a visual database browser at `http://localhost:5555` where you can:
 Now that the database is set up, we can:
 
 1. **Build the authentication system** (NextAuth.js)
+
    - Login page
    - Session management
    - Protected routes
 
 2. **Create the admin dashboard**
+
    - Dashboard layout
    - Navigation sidebar
    - User management
@@ -72,11 +76,10 @@ Now that the database is set up, we can:
 ## 🔐 Security Reminder
 
 **Change the admin password after first login!**
+
 - Current: `admin123`
 - This is a temporary password for initial setup
 
 ---
 
 **Great work! Your database foundation is complete!** 🚀
-
-

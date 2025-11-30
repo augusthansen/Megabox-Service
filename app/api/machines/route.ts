@@ -13,8 +13,19 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const siteId = searchParams.get("siteId");
+    const companyId = searchParams.get("companyId");
 
-    const where = siteId ? { siteId } : {};
+    // Build where clause
+    let where: any = {};
+    
+    if (siteId) {
+      where.siteId = siteId;
+    } else if (companyId) {
+      // If filtering by companyId, we need to filter through sites
+      where.site = {
+        companyId: companyId,
+      };
+    }
 
     const machines = await prisma.machine.findMany({
       where,
@@ -51,12 +62,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { serialNumber, model, siteId, status } = body;
+    const { name, serialNumber, model, siteId, status } = body;
 
     // Validate required fields
-    if (!serialNumber || !model || !siteId) {
+    if (!name || !siteId) {
       return NextResponse.json(
-        { error: "Serial number, model, and site ID are required" },
+        { error: "Machine name and site ID are required" },
         { status: 400 }
       );
     }
@@ -64,8 +75,9 @@ export async function POST(request: NextRequest) {
     // Create the machine
     const machine = await prisma.machine.create({
       data: {
-        serialNumber,
-        model,
+        name,
+        serialNumber: serialNumber || null,
+        model: model || null,
         siteId,
         status: status || "active",
       },

@@ -18,6 +18,7 @@ I've created your `.env.local` file! Now you need to add your Supabase database 
    ```
 
 ### Important Notes:
+
 - The connection string already has `[YOUR-PASSWORD]` as a placeholder
 - You need to **replace `[YOUR-PASSWORD]`** with your actual database password
 - If you don't know your password, you can reset it in Supabase settings
@@ -39,6 +40,7 @@ I've created your `.env.local` file! Now you need to add your Supabase database 
 ## Step 3: Test the Connection
 
 Once you've updated `.env.local`, I'll help you:
+
 1. Push the database schema (create all tables)
 2. Create the admin user
 3. Verify everything works
@@ -57,6 +59,7 @@ Once you've updated `.env.local`, I'll help you:
 6. Then follow Step 1 above
 
 **Free tier includes:**
+
 - 500 MB database
 - 2 GB bandwidth
 - Perfect for development!
@@ -80,5 +83,3 @@ Once you've updated `.env.local`, I'll help you:
 3. **Tell me:** "I've added my DATABASE_URL" or "I need help getting it"
 
 Then I'll help you push the database schema and create the admin user!
-
-

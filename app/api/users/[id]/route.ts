@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
+import { createContactInHubspot } from "@/lib/hubspot";
 
 /**
  * Individual User API Routes
@@ -23,6 +24,7 @@ export async function GET(
         email: true,
         role: true,
         companyId: true,
+        phone: true,
         company: {
           select: {
             id: true,
@@ -59,16 +61,19 @@ export async function PATCH(
 ) {
   try {
     const body = await request.json();
-    const { name, email, password, role, companyId, isActive } = body;
+    const { name, email, password, role, companyId, isActive, phone } = body;
 
     const updateData: any = {};
 
     if (name !== undefined) updateData.name = name;
     if (email !== undefined) {
+      // Normalize email to lowercase
+      const normalizedEmail = email.trim().toLowerCase();
+      
       // Check if email is already taken by another user
       const existingUser = await prisma.user.findFirst({
         where: {
-          email,
+          email: normalizedEmail,
           NOT: { id: params.id },
         },
       });
@@ -80,7 +85,7 @@ export async function PATCH(
         );
       }
 
-      updateData.email = email;
+      updateData.email = normalizedEmail;
     }
     if (password !== undefined && password !== "") {
       updateData.passwordHash = await hashPassword(password);
@@ -88,6 +93,49 @@ export async function PATCH(
     if (role !== undefined) updateData.role = role;
     if (companyId !== undefined) updateData.companyId = companyId || null;
     if (isActive !== undefined) updateData.isActive = isActive;
+    if (phone !== undefined) updateData.phone = phone || null;
+
+    // Get current user to check if they're a service tech and have HubSpot ID
+    const currentUser = await prisma.user.findUnique({
+      where: { id: params.id },
+      select: { role: true, hubspotId: true, email: true, name: true },
+    });
+
+    // If user is being updated to service_tech and doesn't have HubSpot ID, create contact
+    const isServiceTech = role === "service_tech" || currentUser?.role === "service_tech";
+    const needsHubspotSync = isServiceTech && !currentUser?.hubspotId;
+
+    if (needsHubspotSync) {
+      try {
+        const nameToUse = name || currentUser?.name || "";
+        const emailToUse = updateData.email || currentUser?.email || "";
+        
+        if (emailToUse && nameToUse) {
+          // Split name into first and last name
+          const nameParts = nameToUse.trim().split(" ");
+          const firstName = nameParts[0] || "";
+          const lastName = nameParts.slice(1).join(" ") || "";
+
+          // Create contact in HubSpot
+          const hubspotContact = await createContactInHubspot({
+            email: emailToUse,
+            firstName,
+            lastName,
+            phone: phone || undefined,
+          });
+
+          if (hubspotContact && hubspotContact.id) {
+            updateData.hubspotId = hubspotContact.id;
+            console.log(`Created HubSpot contact for service tech: ${emailToUse} (${hubspotContact.id})`);
+          }
+        }
+      } catch (hubspotError: any) {
+        // Log error but don't fail user update
+        console.error("Error creating HubSpot contact for service tech:", hubspotError);
+        console.error("User will be updated without HubSpot sync. Error:", hubspotError?.message);
+        // Continue with user update even if HubSpot sync fails
+      }
+    }
 
     const user = await prisma.user.update({
       where: {
@@ -100,6 +148,8 @@ export async function PATCH(
         email: true,
         role: true,
         companyId: true,
+        phone: true,
+        hubspotId: true,
         company: {
           select: {
             id: true,

@@ -22,21 +22,26 @@ Remote service management platform for mail inserter machines.
 ### Installation
 
 1. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Set up environment variables:**
+
    ```bash
    cp .env.local.example .env.local
    ```
+
    Then edit `.env.local` with your actual values:
+
    - `DATABASE_URL` - Your Supabase PostgreSQL connection string
    - `NEXTAUTH_SECRET` - Generate with: `openssl rand -base64 32`
    - `HUBSPOT_API_KEY` - Your HubSpot private app token
    - `DAILY_API_KEY` - Your Daily.co API key
 
 3. **Set up the database:**
+
    ```bash
    # Push schema to database
    npm run db:push
@@ -49,6 +54,7 @@ Remote service management platform for mail inserter machines.
    ```
 
 4. **Run the development server:**
+
    ```bash
    npm run dev
    ```
@@ -58,6 +64,7 @@ Remote service management platform for mail inserter machines.
 ## Initial Admin User
 
 After seeding, you can log in with:
+
 - **Email:** admin@megaboxsupply.com
 - **Password:** admin123
 
@@ -110,5 +117,3 @@ megabox-service/
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Prisma Documentation](https://www.prisma.io/docs)
 - [NextAuth.js Documentation](https://next-auth.js.org)
-
-

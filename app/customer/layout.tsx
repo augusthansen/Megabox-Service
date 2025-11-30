@@ -110,26 +110,37 @@ export default function CustomerLayout({
             </div>
           </div>
 
-          {/* Mobile Navigation */}
-          <div className="md:hidden flex items-center space-x-4 pb-3">
-            <Link
-              href="/customer"
-              className="text-sm text-slate-600 hover:text-slate-900 font-medium"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/customer/tickets"
-              className="text-sm text-slate-600 hover:text-slate-900 font-medium"
-            >
-              Tickets
-            </Link>
-            <Link
-              href="/customer/machines"
-              className="text-sm text-slate-600 hover:text-slate-900 font-medium"
-            >
-              Machines
-            </Link>
+          {/* Mobile Navigation - Improved */}
+          <div className="md:hidden border-t border-slate-200 pt-3 pb-3">
+            <div className="flex items-center justify-around">
+              <Link
+                href="/customer"
+                className="flex flex-col items-center px-3 py-2 text-xs text-slate-600 hover:text-slate-900 font-medium transition-colors min-h-[44px] justify-center"
+              >
+                <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Dashboard
+              </Link>
+              <Link
+                href="/customer/tickets"
+                className="flex flex-col items-center px-3 py-2 text-xs text-slate-600 hover:text-slate-900 font-medium transition-colors min-h-[44px] justify-center"
+              >
+                <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                </svg>
+                Tickets
+              </Link>
+              <Link
+                href="/customer/machines"
+                className="flex flex-col items-center px-3 py-2 text-xs text-slate-600 hover:text-slate-900 font-medium transition-colors min-h-[44px] justify-center"
+              >
+                <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                </svg>
+                Machines
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
@@ -152,6 +163,7 @@ export default function CustomerLayout({
           </div>
         </div>
       </footer>
+
     </div>
   );
 }

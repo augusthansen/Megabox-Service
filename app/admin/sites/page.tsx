@@ -15,6 +15,11 @@ interface Site {
   city: string | null;
   state: string | null;
   zipCode: string | null;
+  primaryContact: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
   company: {
     id: string;
     name: string;
@@ -34,13 +39,20 @@ export default function SitesPage() {
 
   const fetchSites = async () => {
     try {
+      setLoading(true);
       const response = await fetch("/api/sites");
       if (response.ok) {
         const data = await response.json();
+        console.log("Fetched sites:", data);
         setSites(data);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        console.error("Failed to fetch sites:", response.status, errorData);
+        alert(`Failed to load sites: ${errorData.error || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error fetching sites:", error);
+      alert("Error loading sites. Check console for details.");
     } finally {
       setLoading(false);
     }
@@ -49,7 +61,10 @@ export default function SitesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-slate-500">Loading sites...</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-slate-500">Loading sites...</p>
+        </div>
       </div>
     );
   }
@@ -82,6 +97,7 @@ export default function SitesPage() {
                 <th>Site Name</th>
                 <th>Customer</th>
                 <th>Location</th>
+                <th>Main Contact</th>
                 <th>Machines</th>
                 <th>Actions</th>
               </tr>
@@ -107,6 +123,16 @@ export default function SitesPage() {
                       <span>{site.address}</span>
                     ) : (
                       <span className="text-slate-400">No location</span>
+                    )}
+                  </td>
+                  <td className="text-slate-600">
+                    {site.primaryContact ? (
+                      <div>
+                        <div className="font-medium">{site.primaryContact.name}</div>
+                        <div className="text-xs text-slate-500">{site.primaryContact.email}</div>
+                      </div>
+                    ) : (
+                      <span className="text-slate-400">No contact assigned</span>
                     )}
                   </td>
                   <td className="text-slate-600">
