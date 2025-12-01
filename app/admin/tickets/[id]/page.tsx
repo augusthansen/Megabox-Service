@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { CollapsibleSection } from "@/components/ui/collapsible";
 
 /**
  * Ticket Detail Page
@@ -389,51 +390,61 @@ export default function TicketDetailPage() {
 
       {/* Sessions Section */}
       {ticket.sessions.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Sessions</h3>
-          <div className="space-y-3">
-            {ticket.sessions.map((session) => (
-              <div key={session.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium text-gray-900 capitalize">{session.type.replace("_", " ")}</p>
-                    <p className="text-sm text-gray-600">
-                      {new Date(session.startTime).toLocaleString()}
-                      {session.endTime && ` - ${new Date(session.endTime).toLocaleString()}`}
-                    </p>
-                    {session.durationMinutes && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        Duration: {session.durationMinutes} minutes
+        <div className="mb-6">
+          <CollapsibleSection
+            title="Sessions"
+            count={ticket.sessions.length}
+            defaultOpen={false}
+          >
+            <div className="space-y-3">
+              {ticket.sessions.map((session) => (
+                <div key={session.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-gray-900 capitalize">{session.type.replace("_", " ")}</p>
+                      <p className="text-sm text-gray-600">
+                        {new Date(session.startTime).toLocaleString()}
+                        {session.endTime && ` - ${new Date(session.endTime).toLocaleString()}`}
                       </p>
-                    )}
+                      {session.durationMinutes && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          Duration: {session.durationMinutes} minutes
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </CollapsibleSection>
         </div>
       )}
 
-      {/* Comments Section */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Comments</h3>
-        {ticket.comments.length === 0 ? (
-          <p className="text-gray-500 italic">No comments yet</p>
-        ) : (
-          <div className="space-y-4">
-            {ticket.comments.map((comment) => (
-              <div key={comment.id} className="border-l-4 border-blue-500 pl-4">
-                <div className="flex justify-between items-start mb-2">
-                  <p className="font-medium text-gray-900">{comment.user.name}</p>
-                  <p className="text-sm text-gray-500">
-                    {new Date(comment.createdAt).toLocaleString()}
-                  </p>
+      {/* Comments / Communication Section */}
+      <div className="mb-6">
+        <CollapsibleSection
+          title="Communication"
+          count={ticket.comments.length}
+          defaultOpen={ticket.comments.length > 0}
+        >
+          {ticket.comments.length === 0 ? (
+            <p className="text-gray-500 italic">No comments yet</p>
+          ) : (
+            <div className="space-y-4">
+              {ticket.comments.map((comment) => (
+                <div key={comment.id} className="border-l-4 border-blue-500 pl-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="font-medium text-gray-900">{comment.user.name}</p>
+                    <p className="text-sm text-gray-500">
+                      {new Date(comment.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <p className="text-gray-700 whitespace-pre-wrap">{comment.content}</p>
                 </div>
-                <p className="text-gray-700 whitespace-pre-wrap">{comment.content}</p>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </CollapsibleSection>
       </div>
     </div>
   );
