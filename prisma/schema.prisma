@@ -55,17 +55,18 @@ enum InvoiceStatus {
 }
 
 model User {
-  id                String   @id @default(cuid())
-  email             String   @unique
+  id                String    @id @default(cuid())
+  email             String    @unique
   passwordHash      String
   name              String
   role              UserRole
   companyId         String?
-  company           Company? @relation(fields: [companyId], references: [id])
+  company           Company?  @relation(fields: [companyId], references: [id])
   twoFactorSecret   String?
-  twoFactorEnabled  Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  twoFactorEnabled  Boolean   @default(false)
+  deletedAt         DateTime? // Soft delete
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   // Relations
   createdTickets    Ticket[] @relation("CreatedBy")
@@ -73,13 +74,15 @@ model User {
   sessions          Session[]
   attachments       Attachment[]
   comments          Comment[]
+  auditLogs         AuditLog[]
 
   @@index([email])
   @@index([companyId])
+  @@index([deletedAt])
 }
 
 model Company {
-  id                      String       @id @default(cuid())
+  id                      String        @id @default(cuid())
   name                    String
   hubspotId               String?       @unique
   pricingTier             PricingTier   @default(basic)
@@ -87,6 +90,7 @@ model Company {
   hourlyRate              Decimal       @default(180)
   currentMonthUsageHours  Decimal       @default(0)
   currentMonthUsageCost   Decimal       @default(0)
+  deletedAt               DateTime?     // Soft delete
   createdAt               DateTime      @default(now())
   updatedAt               DateTime      @updatedAt
 
@@ -97,25 +101,27 @@ model Company {
   invoices                Invoice[]
 
   @@index([hubspotId])
+  @@index([deletedAt])
 }
 
 model Site {
-  id          String   @id @default(cuid())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  name        String
-  address     String?
-  city        String?
-  state       String?
-  zipCode     String?
-  timezone    String   @default("America/New_York")
-  contactName String?
+  id           String    @id @default(cuid())
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name         String
+  address      String?
+  city         String?
+  state        String?
+  zipCode      String?
+  timezone     String    @default("America/New_York")
+  contactName  String?
   contactPhone String?
   contactEmail String?
-  notes       String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  notes        String?
+  isActive     Boolean   @default(true)
+  deletedAt    DateTime? // Soft delete
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   // Relations
   machines    Machine[]
@@ -123,30 +129,32 @@ model Site {
   floorMaps   FloorMap[]
 
   @@index([companyId])
+  @@index([deletedAt])
 }
 
 model Machine {
-  id                  String   @id @default(cuid())
-  siteId              String
-  site                Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  name                String
-  model               String?
-  series              String?
-  serialNumber        String?
-  windowsVersion      String?
+  id                   String    @id @default(cuid())
+  siteId               String
+  site                 Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  name                 String
+  model                String?
+  series               String?
+  serialNumber         String?
+  windowsVersion       String?
   directConnectVersion String?
-  firmwareVersion     String?
-  configuration       Json?    // Scanning, feeders, stations, etc.
-  status              String?
-  isCurrentlyDown     Boolean  @default(false)
-  hasRemoteAccess     Boolean  @default(false)
-  remoteAccessType    String?
-  remoteAccessId      String?
-  floorMapId          String?
-  positionX           Float?
-  positionY           Float?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  firmwareVersion      String?
+  configuration        Json?     // Scanning, feeders, stations, etc.
+  status               String?
+  isCurrentlyDown      Boolean   @default(false)
+  hasRemoteAccess      Boolean   @default(false)
+  remoteAccessType     String?
+  remoteAccessId       String?
+  floorMapId           String?
+  positionX            Float?
+  positionY            Float?
+  deletedAt            DateTime? // Soft delete
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   // Relations
   alarms              MachineAlarm[]
@@ -154,6 +162,7 @@ model Machine {
 
   @@index([siteId])
   @@index([serialNumber])
+  @@index([deletedAt])
 }
 
 model MachineAlarm {
@@ -303,6 +312,42 @@ model FloorMap {
   updatedAt DateTime @updatedAt
 
   @@index([siteId])
+}
+
+// ============================================
+// Audit Logging
+// ============================================
+
+enum AuditAction {
+  create
+  update
+  delete
+  restore
+  login
+  logout
+  password_change
+  permission_change
+}
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id])
+  action      AuditAction
+  entityType  String      // "User", "Company", "Ticket", etc.
+  entityId    String?
+  oldValues   Json?       // Previous state for updates
+  newValues   Json?       // New state for creates/updates
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?       // Additional context
+  createdAt   DateTime    @default(now())
+
+  @@index([userId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([action])
+  @@index([createdAt])
 }
 
 
