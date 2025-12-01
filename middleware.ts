@@ -17,10 +17,72 @@ const authRoutes = ["/login"];
 // Public routes that don't need any checks
 const publicRoutes = ["/api/login", "/api/auth/session"];
 
+// Rate limiting configuration
+// Note: In edge runtime, we use a simple sliding window approach
+// For production with multiple instances, use Redis or similar
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 100; // requests per window
+const AUTH_RATE_LIMIT_MAX = 5; // stricter for auth routes
+
+// In-memory rate limit store (resets on cold start)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+function getRateLimitKey(request: NextRequest): string {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+             request.headers.get("x-real-ip") ||
+             "127.0.0.1";
+  return `${ip}:${request.nextUrl.pathname}`;
+}
+
+function checkRateLimit(request: NextRequest, maxRequests: number): boolean {
+  const key = getRateLimitKey(request);
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+
+  // Clean up expired entries periodically
+  if (rateLimitMap.size > 10000) {
+    for (const [k, v] of rateLimitMap.entries()) {
+      if (v.resetTime < now) rateLimitMap.delete(k);
+    }
+  }
+
+  if (!entry || entry.resetTime < now) {
+    rateLimitMap.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+
+  if (entry.count >= maxRequests) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip middleware for public API routes
+  // Apply stricter rate limiting for auth-related API routes
+  if (pathname === "/api/login") {
+    if (!checkRateLimit(request, AUTH_RATE_LIMIT_MAX)) {
+      return NextResponse.json(
+        { error: { code: "RATE_LIMITED", message: "Too many login attempts. Please try again later." } },
+        { status: 429, headers: { "Retry-After": "60" } }
+      );
+    }
+  }
+
+  // Apply general rate limiting for all API routes
+  if (pathname.startsWith("/api/")) {
+    if (!checkRateLimit(request, RATE_LIMIT_MAX)) {
+      return NextResponse.json(
+        { error: { code: "RATE_LIMITED", message: "Too many requests. Please try again later." } },
+        { status: 429, headers: { "Retry-After": "60" } }
+      );
+    }
+  }
+
+  // Skip auth checks for public API routes
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }

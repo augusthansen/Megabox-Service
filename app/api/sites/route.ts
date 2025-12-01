@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createSiteSchema, validateRequest } from "@/lib/validations";
 
 /**
  * Sites API Route
- * 
+ *
  * GET: Fetch all sites (optionally filtered by companyId)
  * POST: Create a new site
  */
@@ -11,6 +12,13 @@ import { prisma } from "@/lib/prisma";
 // GET - Fetch sites
 export async function GET(request: NextRequest) {
   try {
+    if (!prisma) {
+      return NextResponse.json(
+        { error: "Database connection unavailable" },
+        { status: 503 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const companyId = searchParams.get("companyId");
 
@@ -49,15 +57,30 @@ export async function GET(request: NextRequest) {
 // POST - Create a new site
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, address, city, state, zipCode, companyId } = body;
-
-    // Validate required fields
-    if (!name || !companyId) {
+    if (!prisma) {
       return NextResponse.json(
-        { error: "Site name and company ID are required" },
-        { status: 400 }
+        { error: "Database connection unavailable" },
+        { status: 503 }
       );
+    }
+
+    const body = await request.json();
+
+    // Validate input
+    const validation = validateRequest(createSiteSchema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    const { name, address, city, state, zipCode, companyId } = validation.data;
+
+    // Verify company exists
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+    });
+
+    if (!company) {
+      return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
 
     // Create the site
@@ -94,5 +117,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-

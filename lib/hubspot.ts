@@ -25,19 +25,47 @@ export function getHubspotClient(): Client {
 /**
  * Sync companies from HubSpot CRM
  * Returns array of HubSpot company objects
+ * Handles pagination for >100 records
  */
 export async function syncCompaniesFromHubspot() {
   try {
     const client = getHubspotClient();
-    
-    // Fetch all companies from HubSpot
-    const response = await client.crm.companies.basicApi.getPage(100);
-    
-    return response.results.map((company: any) => ({
-      hubspotId: company.id,
-      name: company.properties.name || company.properties.domain || "Unknown Company",
-      properties: company.properties,
-    }));
+    const allCompanies: Array<{
+      hubspotId: string;
+      name: string;
+      properties: Record<string, unknown>;
+    }> = [];
+
+    let after: string | undefined = undefined;
+    let hasMore = true;
+
+    // Paginate through all companies
+    while (hasMore) {
+      const response = await client.crm.companies.basicApi.getPage(
+        100,
+        after,
+        undefined,
+        undefined,
+        undefined
+      );
+
+      const mappedCompanies = response.results.map((company: { id: string; properties: Record<string, unknown> }) => ({
+        hubspotId: company.id,
+        name: (company.properties.name as string) || (company.properties.domain as string) || "Unknown Company",
+        properties: company.properties,
+      }));
+
+      allCompanies.push(...mappedCompanies);
+
+      // Check if there are more pages
+      if (response.paging?.next?.after) {
+        after = response.paging.next.after;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    return allCompanies;
   } catch (error) {
     console.error("Error syncing companies from HubSpot:", error);
     throw error;
@@ -47,25 +75,59 @@ export async function syncCompaniesFromHubspot() {
 /**
  * Sync tickets from HubSpot Service Hub
  * Returns array of HubSpot ticket objects
+ * Handles pagination for >100 records
  */
 export async function syncTicketsFromHubspot() {
   try {
     const client = getHubspotClient();
-    
-    // Fetch all tickets from HubSpot Service Hub
-    // Note: HubSpot uses the tickets API for Service Hub
-    const response = await client.crm.tickets.basicApi.getPage(100);
-    
-    return response.results.map((ticket: any) => ({
-      hubspotId: ticket.id,
-      subject: ticket.properties.subject || ticket.properties.hs_ticket_name || "No Subject",
-      description: ticket.properties.content || ticket.properties.hs_ticket_description || null,
-      priority: mapHubspotPriority(ticket.properties.hs_ticket_priority),
-      status: mapHubspotStatus(ticket.properties.hs_ticket_status),
-      createdAt: ticket.properties.createdate ? new Date(ticket.properties.createdate).toISOString() : new Date().toISOString(),
-      properties: ticket.properties,
-      associations: ticket.associations,
-    }));
+    const allTickets: Array<{
+      hubspotId: string;
+      subject: string;
+      description: string | null;
+      priority: string;
+      status: string;
+      createdAt: string;
+      properties: Record<string, unknown>;
+      associations?: unknown;
+    }> = [];
+
+    let after: string | undefined = undefined;
+    let hasMore = true;
+
+    // Paginate through all tickets
+    while (hasMore) {
+      const response = await client.crm.tickets.basicApi.getPage(
+        100,
+        after,
+        undefined,
+        undefined,
+        undefined
+      );
+
+      const mappedTickets = response.results.map((ticket: { id: string; properties: Record<string, string | null>; associations?: unknown }) => ({
+        hubspotId: ticket.id,
+        subject: ticket.properties.subject || ticket.properties.hs_ticket_name || "No Subject",
+        description: ticket.properties.content || ticket.properties.hs_ticket_description || null,
+        priority: mapHubspotPriority(ticket.properties.hs_ticket_priority),
+        status: mapHubspotStatus(ticket.properties.hs_ticket_status),
+        createdAt: ticket.properties.createdate
+          ? new Date(ticket.properties.createdate).toISOString()
+          : new Date().toISOString(),
+        properties: ticket.properties,
+        associations: ticket.associations,
+      }));
+
+      allTickets.push(...mappedTickets);
+
+      // Check if there are more pages
+      if (response.paging?.next?.after) {
+        after = response.paging.next.after;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    return allTickets;
   } catch (error) {
     console.error("Error syncing tickets from HubSpot:", error);
     throw error;

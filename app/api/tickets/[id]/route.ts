@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateTicketInHubspot } from "@/lib/hubspot";
+import { updateTicketSchema, validateRequest } from "@/lib/validations";
 
 /**
  * Single Ticket API Route
- * 
+ *
  * GET: Fetch a single ticket with all details
  * PATCH: Update a ticket
  */
@@ -15,6 +16,13 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!prisma) {
+      return NextResponse.json(
+        { error: "Database connection unavailable" },
+        { status: 503 }
+      );
+    }
+
     const ticket = await prisma.ticket.findUnique({
       where: {
         id: params.id,
@@ -69,24 +77,12 @@ export async function GET(
           orderBy: {
             createdAt: "desc",
           },
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
         },
       },
     });
 
     if (!ticket) {
-      return NextResponse.json(
-        { error: "Ticket not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
 
     return NextResponse.json(ticket);
@@ -105,23 +101,32 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const body = await request.json();
-    const {
-      status,
-      priority,
-      assignedToId,
-      subject,
-      description,
-      machineDown,
-    } = body;
+    if (!prisma) {
+      return NextResponse.json(
+        { error: "Database connection unavailable" },
+        { status: 503 }
+      );
+    }
 
-    const updateData: any = {};
+    const body = await request.json();
+
+    // Validate input
+    const validation = validateRequest(updateTicketSchema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    const { status, priority, assignedToId, subject, description, machineDown } =
+      validation.data;
+
+    // Build update data
+    const updateData: Record<string, unknown> = {};
 
     if (status !== undefined) updateData.status = status;
     if (priority !== undefined) updateData.priority = priority;
     if (assignedToId !== undefined) {
       updateData.assignedToId = assignedToId || null;
-      if (assignedToId && !updateData.assignedAt) {
+      if (assignedToId) {
         updateData.assignedAt = new Date();
       }
     }
@@ -130,13 +135,13 @@ export async function PATCH(
     if (machineDown !== undefined) updateData.machineDown = machineDown;
 
     // Update timestamps based on status
-    if (status === "in_progress" && !updateData.startedAt) {
+    if (status === "in_progress") {
       updateData.startedAt = new Date();
     }
-    if (status === "resolved" && !updateData.resolvedAt) {
+    if (status === "resolved") {
       updateData.resolvedAt = new Date();
     }
-    if (status === "closed" && !updateData.closedAt) {
+    if (status === "closed") {
       updateData.closedAt = new Date();
     }
 
@@ -146,8 +151,12 @@ export async function PATCH(
       select: { hubspotId: true },
     });
 
+    if (!existingTicket) {
+      return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
+    }
+
     // Update ticket in HubSpot if it exists and API key is configured
-    if (process.env.HUBSPOT_API_KEY && existingTicket?.hubspotId) {
+    if (process.env.HUBSPOT_API_KEY && existingTicket.hubspotId) {
       try {
         await updateTicketInHubspot(existingTicket.hubspotId, {
           status: status || undefined,
@@ -156,7 +165,10 @@ export async function PATCH(
           description: description || undefined,
         });
       } catch (error) {
-        console.error("Error updating ticket in HubSpot (continuing anyway):", error);
+        console.error(
+          "Error updating ticket in HubSpot (continuing anyway):",
+          error
+        );
         // Continue updating ticket locally even if HubSpot fails
       }
     }
@@ -205,4 +217,3 @@ export async function PATCH(
     );
   }
 }
-

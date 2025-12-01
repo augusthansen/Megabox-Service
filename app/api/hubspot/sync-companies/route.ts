@@ -10,6 +10,13 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST() {
   try {
+    if (!prisma) {
+      return NextResponse.json(
+        { error: "Database connection unavailable" },
+        { status: 503 }
+      );
+    }
+
     // Check if HubSpot API key is configured
     if (!process.env.HUBSPOT_API_KEY) {
       return NextResponse.json(
@@ -45,16 +52,17 @@ export async function POST() {
         } else {
           // Create new company
           // Try to extract pricing tier from HubSpot properties if available
-          const pricingTier = hubspotCompany.properties.pricing_tier || 
-                            hubspotCompany.properties.pricing_tier_c || 
-                            "basic";
-          
+          const rawPricingTier = (hubspotCompany.properties.pricing_tier ||
+                            hubspotCompany.properties.pricing_tier_c ||
+                            "basic") as string;
+          const pricingTier = rawPricingTier.toLowerCase();
+
           await prisma.company.create({
             data: {
               hubspotId: hubspotCompany.hubspotId,
               name: hubspotCompany.name,
-              pricingTier: pricingTier.toLowerCase() === "standard" ? "standard" : 
-                          pricingTier.toLowerCase() === "mega" ? "mega" : "basic",
+              pricingTier: pricingTier === "standard" ? "standard" :
+                          pricingTier === "mega" ? "mega" : "basic",
             },
           });
           synced.push(hubspotCompany.name);

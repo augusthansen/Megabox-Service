@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { createCustomerSchema, validateRequest } from "@/lib/validations";
 
 /**
  * Customers API Route
- * 
+ *
  * GET: Fetch all customers
  * POST: Create a new customer
  */
@@ -12,6 +13,13 @@ import { Prisma } from "@prisma/client";
 // GET - Fetch all customers
 export async function GET() {
   try {
+    if (!prisma) {
+      return NextResponse.json(
+        { error: "Database connection unavailable" },
+        { status: 503 }
+      );
+    }
+
     const customers = await prisma.company.findMany({
       orderBy: {
         createdAt: "desc",
@@ -39,16 +47,23 @@ export async function GET() {
 // POST - Create a new customer
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, pricingTier, pricePerMachine, hourlyRate, sites } = body;
-
-    // Validate required fields
-    if (!name) {
+    if (!prisma) {
       return NextResponse.json(
-        { error: "Company name is required" },
-        { status: 400 }
+        { error: "Database connection unavailable" },
+        { status: 503 }
       );
     }
+
+    const body = await request.json();
+
+    // Validate input
+    const validation = validateRequest(createCustomerSchema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    const { name, pricingTier, pricePerMachine, hourlyRate, sites } =
+      validation.data;
 
     // Set default pricing based on tier
     const tierDefaults = {

@@ -10,6 +10,13 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST() {
   try {
+    if (!prisma) {
+      return NextResponse.json(
+        { error: "Database connection unavailable" },
+        { status: 503 }
+      );
+    }
+
     // Check if HubSpot API key is configured
     if (!process.env.HUBSPOT_API_KEY) {
       return NextResponse.json(
@@ -51,8 +58,11 @@ export async function POST() {
 
         // Try to find associated company from HubSpot associations
         let companyId: string | null = null;
-        if (hubspotTicket.associations?.companies?.results?.length > 0) {
-          const hubspotCompanyId = hubspotTicket.associations.companies.results[0].id;
+        const associations = hubspotTicket.associations as {
+          companies?: { results?: Array<{ id: string }> };
+        } | undefined;
+        if (associations?.companies?.results?.length) {
+          const hubspotCompanyId = associations.companies.results[0].id;
           const company = await prisma.company.findUnique({
             where: { hubspotId: hubspotCompanyId },
           });
