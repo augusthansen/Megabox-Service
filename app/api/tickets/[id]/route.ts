@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateTicketInHubspot } from "@/lib/hubspot";
 import { updateTicketSchema, validateRequest } from "@/lib/validations";
+import { getSession } from "@/lib/jwt";
 
 /**
  * Single Ticket API Route
@@ -22,6 +23,10 @@ export async function GET(
         { status: 503 }
       );
     }
+
+    // Get current user session to check role
+    const session = await getSession();
+    const isCustomerUser = session?.role === "customer_admin" || session?.role === "customer_tech";
 
     const ticket = await prisma.ticket.findUnique({
       where: {
@@ -74,8 +79,18 @@ export async function GET(
           take: 10,
         },
         comments: {
+          where: isCustomerUser ? { isInternal: false } : undefined,
           orderBy: {
             createdAt: "desc",
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
       },

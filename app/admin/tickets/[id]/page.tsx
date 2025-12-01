@@ -14,6 +14,7 @@ import { CollapsibleSection } from "@/components/ui/collapsible";
 interface Comment {
   id: string;
   content: string;
+  isInternal: boolean;
   user: {
     id: string;
     name: string;
@@ -76,12 +77,20 @@ interface Ticket {
   closedAt: string | null;
 }
 
+interface CurrentUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}
+
 export default function TicketDetailPage() {
   const params = useParams();
   const router = useRouter();
   const ticketId = params.id as string;
 
   const [ticket, setTicket] = useState<Ticket | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({
@@ -91,10 +100,31 @@ export default function TicketDetailPage() {
     description: "",
     machineDown: false,
   });
+  const [newComment, setNewComment] = useState("");
+  const [isInternalComment, setIsInternalComment] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
+
+  // Check if current user can see/create internal comments
+  const canSeeInternal = currentUser?.role === "super_admin" || currentUser?.role === "service_tech";
 
   useEffect(() => {
     fetchTicket();
+    fetchCurrentUser();
   }, [ticketId]);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await fetch("/api/auth/session");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user) {
+          setCurrentUser(data.user);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user:", error);
+    }
+  };
 
   const fetchTicket = async () => {
     try {
@@ -142,6 +172,39 @@ export default function TicketDetailPage() {
     } catch (error) {
       console.error("Error updating ticket:", error);
       alert("Something went wrong");
+    }
+  };
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || submittingComment) return;
+
+    setSubmittingComment(true);
+    try {
+      const response = await fetch(`/api/tickets/${ticketId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content: newComment.trim(),
+          isInternal: isInternalComment,
+        }),
+      });
+
+      if (response.ok) {
+        setNewComment("");
+        setIsInternalComment(false);
+        fetchTicket(); // Refresh to show new comment
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to add comment");
+      }
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      alert("Something went wrong");
+    } finally {
+      setSubmittingComment(false);
     }
   };
 
@@ -425,16 +488,28 @@ export default function TicketDetailPage() {
         <CollapsibleSection
           title="Communication"
           count={ticket.comments.length}
-          defaultOpen={ticket.comments.length > 0}
+          defaultOpen={true}
         >
-          {ticket.comments.length === 0 ? (
-            <p className="text-gray-500 italic">No comments yet</p>
-          ) : (
-            <div className="space-y-4">
+          {ticket.comments.length > 0 && (
+            <div className="space-y-4 mb-6">
               {ticket.comments.map((comment) => (
-                <div key={comment.id} className="border-l-4 border-blue-500 pl-4">
+                <div
+                  key={comment.id}
+                  className={`border-l-4 pl-4 ${
+                    comment.isInternal
+                      ? "border-orange-500 bg-orange-50 rounded-r-lg py-2 pr-2"
+                      : "border-blue-500"
+                  }`}
+                >
                   <div className="flex justify-between items-start mb-2">
-                    <p className="font-medium text-gray-900">{comment.user.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-gray-900">{comment.user.name}</p>
+                      {comment.isInternal && canSeeInternal && (
+                        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                          Internal
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-500">
                       {new Date(comment.createdAt).toLocaleString()}
                     </p>
@@ -444,6 +519,42 @@ export default function TicketDetailPage() {
               ))}
             </div>
           )}
+
+          {/* Add Comment Form */}
+          <form onSubmit={handleAddComment} className="border-t border-gray-200 pt-4">
+            <div className="mb-3">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Add a comment..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                {canSeeInternal && (
+                  <label className="flex items-center text-sm text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={isInternalComment}
+                      onChange={(e) => setIsInternalComment(e.target.checked)}
+                      className="mr-2 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                    />
+                    <span className="text-orange-600 font-medium">Internal note</span>
+                    <span className="ml-1 text-gray-400">(hidden from customers)</span>
+                  </label>
+                )}
+              </div>
+              <button
+                type="submit"
+                disabled={!newComment.trim() || submittingComment}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submittingComment ? "Sending..." : "Add Comment"}
+              </button>
+            </div>
+          </form>
         </CollapsibleSection>
       </div>
     </div>
