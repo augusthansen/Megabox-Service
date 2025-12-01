@@ -20,6 +20,7 @@ export function CollapsibleSection({
   return (
     <div className="bg-white rounded-lg shadow">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors rounded-lg"
       >
@@ -47,13 +48,11 @@ export function CollapsibleSection({
           />
         </svg>
       </button>
-      <div
-        className={`overflow-hidden transition-all duration-200 ${
-          isOpen ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
-        }`}
-      >
-        <div className="px-6 pb-6">{children}</div>
-      </div>
+      {isOpen && (
+        <div className="px-6 pb-6 border-t border-gray-100">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
