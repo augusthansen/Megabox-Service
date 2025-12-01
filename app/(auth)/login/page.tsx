@@ -1,17 +1,19 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
 
 /**
- * Simple Login Page - Direct API Call
- * 
- * This version posts directly to our custom API route,
- * completely bypassing NextAuth's client-side issues.
+ * Login Page
+ *
+ * Secure login with JWT cookie authentication.
  */
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/admin";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,7 +25,6 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Post directly to our custom login API
       const response = await fetch("/api/login", {
         method: "POST",
         headers: {
@@ -41,10 +42,10 @@ export default function LoginPage() {
         setError(data.error || "Invalid email or password");
         setLoading(false);
       } else if (data.success) {
-        // Login successful!
-        // Store user info temporarily (we'll set up proper session next)
-        sessionStorage.setItem("user", JSON.stringify(data.user));
-        window.location.href = "/admin";
+        // Login successful - cookie is set by server
+        // Use router.push for client-side navigation
+        router.push(callbackUrl);
+        router.refresh();
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -126,3 +127,16 @@ export default function LoginPage() {
   );
 }
 
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
+  );
+}

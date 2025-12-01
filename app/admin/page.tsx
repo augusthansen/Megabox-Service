@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 /**
  * Admin Dashboard Page
- * 
+ *
  * This is the main dashboard page for admins.
  * Shows overview and quick stats.
  */
@@ -17,9 +17,16 @@ interface Stats {
   openTickets: number;
 }
 
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}
+
 export default function AdminPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [stats, setStats] = useState<Stats>({
     customers: 0,
     sites: 0,
@@ -29,15 +36,25 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get user from sessionStorage (layout already checked auth)
-    const userData = sessionStorage.getItem("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-
+    // Fetch user from session API
+    fetchUser();
     // Fetch stats
     fetchStats();
   }, []);
+
+  const fetchUser = async () => {
+    try {
+      const response = await fetch("/api/auth/session");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user) {
+          setUser(data.user);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user:", error);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -62,7 +79,7 @@ export default function AdminPage() {
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h3 className="text-lg font-semibold mb-2">Welcome back, {user.name || "Admin"}!</h3>
           <p className="text-gray-600">
-            You're logged in as <strong>{user.email}</strong> with role: <strong className="capitalize">{user.role?.replace("_", " ") || "admin"}</strong>
+            You&apos;re logged in as <strong>{user.email}</strong> with role: <strong className="capitalize">{user.role?.replace("_", " ") || "admin"}</strong>
           </p>
         </div>
       )}

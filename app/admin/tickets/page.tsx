@@ -76,7 +76,7 @@ export default function TicketsPage() {
     status: "",
     priority: "",
   });
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string; role: string } | null>(null);
   const [formData, setFormData] = useState({
     companyId: "",
     siteId: "",
@@ -88,11 +88,21 @@ export default function TicketsPage() {
   });
 
   useEffect(() => {
-    // Get current user from sessionStorage
-    const userData = sessionStorage.getItem("user");
-    if (userData) {
-      setCurrentUser(JSON.parse(userData));
-    }
+    // Fetch current user from session API
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("/api/auth/session");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user) {
+            setCurrentUser(data.user);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    };
+    fetchUser();
   }, []);
 
   useEffect(() => {

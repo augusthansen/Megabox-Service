@@ -135,15 +135,8 @@ export async function createTicketInHubspot(ticketData: {
     }
     
     // Create the ticket
-    const ticket = await client.crm.tickets.basicApi.create({
-      properties,
-      associations: ticketData.companyId ? [
-        {
-          to: { id: ticketData.companyId },
-          types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 16 }], // Company association
-        },
-      ] : undefined,
-    });
+    // Note: Company associations should be added via HubSpot UI or webhooks
+    const ticket = await client.crm.tickets.basicApi.create({ properties });
     
     return ticket;
   } catch (error) {

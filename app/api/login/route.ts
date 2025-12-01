@@ -1,30 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/auth";
-import { signIn } from "next-auth/react";
+import { setSessionCookie } from "@/lib/jwt";
+import { z } from "zod";
+
+// Input validation schema
+const loginSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(1, "Password is required"),
+});
 
 /**
- * Custom Login API Route
- * 
- * This bypasses NextAuth's client-side issues by handling login
- * directly on the server.
+ * Login API Route
+ *
+ * Validates credentials and sets a secure HTTP-only JWT cookie.
  */
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
 
-    if (!email || !password) {
+    // Validate input
+    const result = loginSchema.safeParse(body);
+    if (!result.success) {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { error: result.error.errors[0].message },
         { status: 400 }
+      );
+    }
+
+    const { email, password } = result.data;
+
+    // Check if Prisma is available
+    if (!prisma) {
+      return NextResponse.json(
+        { error: "Database connection unavailable" },
+        { status: 503 }
       );
     }
 
     // Find user in database
     const user = await prisma.user.findUnique({
-      where: { email: email.trim() },
+      where: { email: email.trim().toLowerCase() },
     });
 
     if (!user) {
@@ -44,8 +60,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create a simple session token (we'll use JWT)
-    // For now, return success and we'll handle session in the client
+    // Set JWT session cookie
+    await setSessionCookie({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      companyId: user.companyId,
+    });
+
+    // Return success with user info (for client-side display)
     return NextResponse.json({
       success: true,
       user: {
@@ -58,7 +82,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Login API error:", error);
     return NextResponse.json(
-      { error: "Something went wrong" },
+      { error: "Something went wrong. Please try again." },
       { status: 500 }
     );
   }

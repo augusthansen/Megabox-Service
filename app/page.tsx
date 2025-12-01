@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/get-session";
+import { getSession } from "@/lib/jwt";
 
 export default async function Home() {
   // Check if user is logged in

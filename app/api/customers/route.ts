@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 /**
  * Customers API Route
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
     const defaults = tierDefaults[tier as keyof typeof tierDefaults] || tierDefaults.basic;
 
     // Create the customer with sites in a transaction
-    const customer = await prisma.$transaction(async (tx) => {
+    const customer = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Create the customer
       const newCustomer = await tx.company.create({
         data: {
