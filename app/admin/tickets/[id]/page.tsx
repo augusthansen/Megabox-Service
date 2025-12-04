@@ -459,25 +459,27 @@ export default function TicketDetailPage() {
             count={ticket.sessions.length}
             defaultOpen={false}
           >
-            <div className="space-y-3">
-              {ticket.sessions.map((session) => (
-                <div key={session.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium text-gray-900 capitalize">{session.type.replace("_", " ")}</p>
-                      <p className="text-sm text-gray-600">
-                        {new Date(session.startTime).toLocaleString()}
-                        {session.endTime && ` - ${new Date(session.endTime).toLocaleString()}`}
-                      </p>
-                      {session.durationMinutes && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          Duration: {session.durationMinutes} minutes
+            <div className="max-h-64 overflow-y-auto pr-2">
+              <div className="space-y-3">
+                {ticket.sessions.map((session) => (
+                  <div key={session.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-gray-900 capitalize">{session.type.replace("_", " ")}</p>
+                        <p className="text-sm text-gray-600">
+                          {new Date(session.startTime).toLocaleString()}
+                          {session.endTime && ` - ${new Date(session.endTime).toLocaleString()}`}
                         </p>
-                      )}
+                        {session.durationMinutes && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            Duration: {session.durationMinutes} minutes
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </CollapsibleSection>
         </div>
@@ -488,35 +490,37 @@ export default function TicketDetailPage() {
         <CollapsibleSection
           title="Communication"
           count={ticket.comments.length}
-          defaultOpen={true}
+          defaultOpen={false}
         >
           {ticket.comments.length > 0 && (
-            <div className="space-y-4 mb-6">
-              {ticket.comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className={`border-l-4 pl-4 ${
-                    comment.isInternal
-                      ? "border-orange-500 bg-orange-50 rounded-r-lg py-2 pr-2"
-                      : "border-blue-500"
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900">{comment.user.name}</p>
-                      {comment.isInternal && canSeeInternal && (
-                        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
-                          Internal
-                        </span>
-                      )}
+            <div className="max-h-64 overflow-y-auto mb-4 pr-2">
+              <div className="space-y-4">
+                {ticket.comments.map((comment) => (
+                  <div
+                    key={comment.id}
+                    className={`border-l-4 pl-4 ${
+                      comment.isInternal
+                        ? "border-orange-500 bg-orange-50 rounded-r-lg py-2 pr-2"
+                        : "border-blue-500"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-gray-900">{comment.user.name}</p>
+                        {comment.isInternal && canSeeInternal && (
+                          <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                            Internal
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        {new Date(comment.createdAt).toLocaleString()}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-500">
-                      {new Date(comment.createdAt).toLocaleString()}
-                    </p>
+                    <p className="text-gray-700 whitespace-pre-wrap">{comment.content}</p>
                   </div>
-                  <p className="text-gray-700 whitespace-pre-wrap">{comment.content}</p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
