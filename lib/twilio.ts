@@ -93,7 +93,7 @@ export function generateTwilioToken(identity: string): string {
  * Create a TwiML application for outbound calls
  * This should be set up once in your Twilio console
  */
-export async function createTwiMLApp(friendlyName: string): Promise<twilio.Api.V2010.ApplicationInstance> {
+export async function createTwiMLApp(friendlyName: string) {
   const client = getTwilioClient();
   
   // This is typically done once in Twilio console, but we can create it programmatically

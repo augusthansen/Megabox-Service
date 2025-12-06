@@ -63,7 +63,7 @@ export default function SitesPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-slate-500">Loading sites...</p>
+          <p className="text-slate-500 dark:text-slate-400">Loading sites...</p>
         </div>
       </div>
     );
@@ -74,8 +74,8 @@ export default function SitesPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Sites</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Sites</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             View and manage all customer locations
           </p>
         </div>
@@ -85,7 +85,7 @@ export default function SitesPage() {
       <div className="table-container">
         {sites.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-slate-500 mb-4">No sites found</p>
+            <p className="text-slate-500 dark:text-slate-400 mb-4">No sites found</p>
             <Link href="/admin/customers" className="btn-primary">
               Add a Customer First
             </Link>
@@ -106,42 +106,42 @@ export default function SitesPage() {
               {sites.map((site) => (
                 <tr key={site.id}>
                   <td>
-                    <div className="font-medium text-slate-900">{site.name}</div>
+                    <div className="font-medium text-slate-900 dark:text-white">{site.name}</div>
                   </td>
                   <td>
                     <Link
                       href={`/admin/customers/${site.company.id}`}
-                      className="text-primary-600 hover:text-primary-700"
+                      className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
                     >
                       {site.company.name}
                     </Link>
                   </td>
-                  <td className="text-slate-600">
+                  <td className="text-slate-600 dark:text-slate-300">
                     {site.city && site.state ? (
                       <span>{site.city}, {site.state}</span>
                     ) : site.address ? (
                       <span>{site.address}</span>
                     ) : (
-                      <span className="text-slate-400">No location</span>
+                      <span className="text-slate-400 dark:text-slate-500">No location</span>
                     )}
                   </td>
-                  <td className="text-slate-600">
+                  <td className="text-slate-600 dark:text-slate-300">
                     {site.primaryContact ? (
                       <div>
-                        <div className="font-medium">{site.primaryContact.name}</div>
-                        <div className="text-xs text-slate-500">{site.primaryContact.email}</div>
+                        <div className="font-medium dark:text-white">{site.primaryContact.name}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">{site.primaryContact.email}</div>
                       </div>
                     ) : (
-                      <span className="text-slate-400">No contact assigned</span>
+                      <span className="text-slate-400 dark:text-slate-500">No contact assigned</span>
                     )}
                   </td>
-                  <td className="text-slate-600">
+                  <td className="text-slate-600 dark:text-slate-300">
                     {site._count.machines} machine{site._count.machines !== 1 ? "s" : ""}
                   </td>
                   <td>
                     <Link
                       href={`/admin/sites/${site.id}`}
-                      className="text-primary-600 hover:text-primary-700 font-medium"
+                      className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
                     >
                       View Details →
                     </Link>

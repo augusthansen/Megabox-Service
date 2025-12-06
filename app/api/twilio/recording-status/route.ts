@@ -52,11 +52,14 @@ export async function POST(request: NextRequest) {
       let transcriptionSid = null;
       
       try {
-        const transcriptions = await twilioClient.transcriptions.list({
-          recordingSid: recordingSid,
-          limit: 1,
+        // Note: Twilio API doesn't support filtering by recordingSid directly in list()
+        const allTranscriptions = await twilioClient.transcriptions.list({
+          limit: 50,
         });
-        
+        const transcriptions = allTranscriptions.filter(t =>
+          t.recordingSid === recordingSid
+        );
+
         if (transcriptions.length > 0) {
           const transcription = transcriptions[0];
           transcriptionSid = transcription.sid;

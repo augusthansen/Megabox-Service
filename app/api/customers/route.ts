@@ -246,8 +246,8 @@ export async function POST(request: NextRequest) {
     // Include HubSpot sync status in response
     const responseData = {
       ...customer,
-      hubspotId: customer.hubspotId,
-      hubspotSynced: !!customer.hubspotId,
+      hubspotId: customer?.hubspotId,
+      hubspotSynced: !!customer?.hubspotId,
     };
 
     return NextResponse.json(responseData, { status: 201 });

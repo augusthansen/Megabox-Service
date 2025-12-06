@@ -176,7 +176,7 @@ export default function HubSpotChatButton({
             document.body.classList.add('chat-widget-visible');
             
             // Open the chat widget
-            if (window.HubSpotConversations.widget.open) {
+            if (window.HubSpotConversations?.widget?.open) {
               window.HubSpotConversations.widget.open();
             } else {
               // Fallback: try to click the chat bubble

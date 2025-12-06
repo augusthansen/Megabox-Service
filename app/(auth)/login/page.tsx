@@ -104,7 +104,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input"
+                className="w-full px-3 py-3 sm:py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-150 disabled:bg-slate-50 disabled:text-slate-500"
                 placeholder="admin@megaboxsupply.com"
                 disabled={loading}
               />
@@ -122,7 +122,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input"
+                className="w-full px-3 py-3 sm:py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-150 disabled:bg-slate-50 disabled:text-slate-500"
                 placeholder="••••••••"
                 disabled={loading}
               />

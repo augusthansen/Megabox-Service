@@ -67,13 +67,12 @@ export default function UsersPage() {
       const response = await fetch("/api/users");
       if (response.ok) {
         const data = await response.json();
-        console.log("Fetched users:", data);
         setUsers(data);
       } else {
         const errorData = await response
           .json()
           .catch(() => ({ error: "Unknown error" }));
-        console.error("Failed to fetch users:", response.status, errorData);
+        console.error("Failed to fetch users:", errorData);
         alert(`Failed to load users: ${errorData.error || "Unknown error"}`);
       }
     } catch (error) {
@@ -314,7 +313,7 @@ export default function UsersPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-slate-500">Loading users...</p>
+          <p className="text-slate-500 dark:text-slate-400">Loading users...</p>
         </div>
       </div>
     );
@@ -325,8 +324,8 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Users</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Users</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Manage system users and access control
           </p>
         </div>
@@ -363,7 +362,7 @@ export default function UsersPage() {
       {/* Edit User Form */}
       {editingUser && (
         <div className="card p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
             Edit User: {editingUser.name}
           </h3>
           <form onSubmit={handleUpdateUser} className="space-y-4">
@@ -371,7 +370,7 @@ export default function UsersPage() {
               <div>
                 <label
                   htmlFor="edit-name"
-                  className="block text-sm font-medium text-slate-700 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   Full Name *
                 </label>
@@ -391,7 +390,7 @@ export default function UsersPage() {
               <div>
                 <label
                   htmlFor="edit-email"
-                  className="block text-sm font-medium text-slate-700 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   Email Address *
                 </label>
@@ -413,7 +412,7 @@ export default function UsersPage() {
               <div>
                 <label
                   htmlFor="edit-phone"
-                  className="block text-sm font-medium text-slate-700 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   Phone Number
                 </label>
@@ -432,7 +431,7 @@ export default function UsersPage() {
               <div>
                 <label
                   htmlFor="edit-role"
-                  className="block text-sm font-medium text-slate-700 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   Role *
                 </label>
@@ -456,7 +455,7 @@ export default function UsersPage() {
               <div>
                 <label
                   htmlFor="edit-password"
-                  className="block text-sm font-medium text-slate-700 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   New Password (leave blank to keep current)
                 </label>
@@ -473,7 +472,7 @@ export default function UsersPage() {
                   className="input"
                   placeholder="••••••••"
                 />
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   Only enter a password if you want to change it
                 </p>
               </div>
@@ -481,7 +480,7 @@ export default function UsersPage() {
               <div>
                 <label
                   htmlFor="edit-status"
-                  className="block text-sm font-medium text-slate-700 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   Status *
                 </label>
@@ -507,7 +506,7 @@ export default function UsersPage() {
               <div>
                 <label
                   htmlFor="edit-companyId"
-                  className="block text-sm font-medium text-slate-700 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   Company * (Required for customer roles)
                 </label>
@@ -563,7 +562,7 @@ export default function UsersPage() {
       {/* Add User Form */}
       {showAddForm && (
         <div className="card p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
             Add New User
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -571,7 +570,7 @@ export default function UsersPage() {
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-medium text-slate-700 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   Full Name *
                 </label>
@@ -591,7 +590,7 @@ export default function UsersPage() {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm font-medium text-slate-700 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   Email Address *
                 </label>
@@ -613,7 +612,7 @@ export default function UsersPage() {
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-sm font-medium text-slate-700 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   Password *
                 </label>
@@ -633,7 +632,7 @@ export default function UsersPage() {
               <div>
                 <label
                   htmlFor="role"
-                  className="block text-sm font-medium text-slate-700 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   Role *
                 </label>
@@ -658,7 +657,7 @@ export default function UsersPage() {
               <div>
                 <label
                   htmlFor="companyId"
-                  className="block text-sm font-medium text-slate-700 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   Company * (Required for customer roles)
                 </label>
@@ -714,7 +713,7 @@ export default function UsersPage() {
           <tbody>
             {users.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center text-slate-500 py-8">
+                <td colSpan={7} className="text-center text-slate-500 dark:text-slate-400 py-8">
                   No users found. Create your first user!
                 </td>
               </tr>
@@ -729,7 +728,7 @@ export default function UsersPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-slate-900">
+                        <span className="font-medium text-slate-900 dark:text-white">
                           {user.name}
                         </span>
                         {user.hubspotId && (
@@ -752,22 +751,22 @@ export default function UsersPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="text-slate-600">{user.email}</td>
+                  <td className="text-slate-600 dark:text-slate-300">{user.email}</td>
                   <td>
                     <span className={getRoleBadge(user.role)}>
                       {getRoleLabel(user.role)}
                     </span>
                   </td>
-                  <td className="text-slate-600">
+                  <td className="text-slate-600 dark:text-slate-300">
                     {user.company ? (
                       <Link
                         href={`/admin/customers/${user.companyId}`}
-                        className="text-primary-600 hover:text-primary-700"
+                        className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
                       >
                         {user.company.name}
                       </Link>
                     ) : (
-                      <span className="text-slate-400">—</span>
+                      <span className="text-slate-400 dark:text-slate-500">—</span>
                     )}
                   </td>
                   <td>
@@ -777,33 +776,33 @@ export default function UsersPage() {
                       <span className="badge badge-neutral">Inactive</span>
                     )}
                   </td>
-                  <td className="text-slate-600">
+                  <td className="text-slate-600 dark:text-slate-300">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td>
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEditUser(user)}
-                        className="text-sm text-primary-600 hover:text-primary-700"
+                        className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
                         title="Edit user"
                       >
                         Edit
                       </button>
-                      <span className="text-slate-300">|</span>
+                      <span className="text-slate-300 dark:text-slate-600">|</span>
                       <button
                         onClick={() => handleResetPassword(user.id, user.email)}
                         disabled={resettingPassword === user.id}
-                        className="text-sm text-primary-600 hover:text-primary-700 disabled:opacity-50"
+                        className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 disabled:opacity-50"
                         title="Reset password"
                       >
                         {resettingPassword === user.id
                           ? "Resetting..."
                           : "Reset Password"}
                       </button>
-                      <span className="text-slate-300">|</span>
+                      <span className="text-slate-300 dark:text-slate-600">|</span>
                       <button
                         onClick={() => toggleUserStatus(user.id, user.isActive)}
-                        className="text-sm text-slate-600 hover:text-slate-900"
+                        className="text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                         title={user.isActive ? "Deactivate" : "Activate"}
                       >
                         {user.isActive ? "Deactivate" : "Activate"}

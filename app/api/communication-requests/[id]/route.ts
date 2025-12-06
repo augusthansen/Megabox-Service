@@ -12,12 +12,12 @@ import { createDailyRoom } from "@/lib/daily";
 
 // GET - Fetch a single communication request
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const request = await prisma.communicationRequest.findUnique({
+    const communicationRequest = await prisma.communicationRequest.findUnique({
       where: { id },
       include: {
         ticket: {
@@ -76,14 +76,14 @@ export async function GET(
       },
     });
 
-    if (!request) {
+    if (!communicationRequest) {
       return NextResponse.json(
         { error: "Communication request not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(request);
+    return NextResponse.json(communicationRequest);
   } catch (error: any) {
     console.error("Error fetching communication request:", error);
     return NextResponse.json(
@@ -410,13 +410,11 @@ export async function PATCH(
     console.error("Error code:", error?.code);
     console.error("Error name:", error?.name);
     console.error("Error stack:", error?.stack);
-    console.error("Request ID:", id);
-    console.error("Request body:", body);
     console.error("===========================================================");
-    
+
     return NextResponse.json(
-      { 
-        error: "Failed to update communication request", 
+      {
+        error: "Failed to update communication request",
         details: error?.message || "Unknown error",
         code: error?.code,
         name: error?.name,

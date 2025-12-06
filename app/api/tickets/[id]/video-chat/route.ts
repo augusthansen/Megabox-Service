@@ -184,6 +184,7 @@ export async function POST(
 
     // Get customer info for response (for potential email/SMS notifications)
     const customerInfo = ticket.site?.primaryContact || ticket.createdBy;
+    const customerIdForNotification = ticket.site?.primaryContactId || ticket.createdById;
 
     return NextResponse.json({
       success: true,
@@ -192,7 +193,7 @@ export async function POST(
       meetingToken: meetingToken,
       sessionId: sessionId,
       ticketId: ticketId,
-      customerNotified: !!customerUserId,
+      customerNotified: !!customerIdForNotification,
       customerEmail: customerInfo?.email || null,
       customerPhone: customerInfo?.phone || null,
     });

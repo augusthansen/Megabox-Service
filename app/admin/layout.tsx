@@ -5,23 +5,26 @@ import { TopBar } from "@/components/admin/top-bar";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+interface SessionUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  companyId?: string;
+}
+
 /**
  * Admin Layout
- * 
- * This layout wraps all admin pages with:
- * - Sidebar navigation
- * - Top bar with user info
- * - Main content area
- * - Authentication check
+ *
+ * Wraps all admin pages with sidebar navigation, top bar, and auth check.
  */
-
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -52,8 +55,11 @@ export default function AdminLayout({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-gray-500">Loading...</p>
+      <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -63,23 +69,23 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-900">
       {/* Sidebar */}
-      <AdminSidebar 
-        isOpen={sidebarOpen} 
+      <AdminSidebar
+        isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Top Bar */}
-        <TopBar 
-          user={user} 
+        <TopBar
+          user={user}
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         />
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-50 dark:bg-slate-900">
           {children}
         </main>
       </div>

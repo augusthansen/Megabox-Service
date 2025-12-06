@@ -40,67 +40,73 @@ export default function HubSpotCalling({
         const CallingExtensions = (await import("@hubspot/calling-extensions-sdk")).default;
         
         // Initialize the calling extension with event handlers
+        // Cast to any to avoid strict type checking on optional event handlers
+        const eventHandlers: Record<string, unknown> = {
+          onReady: () => {
+            console.log("HubSpot Calling SDK ready");
+            setIsReady(true);
+
+            // Once ready, initiate the outbound call
+            if (phoneNumber) {
+              try {
+                calling.outboundCall({
+                  phoneNumber,
+                  createEngagement: true,
+                });
+              } catch (err: unknown) {
+                const error = err as { message?: string };
+                console.error("Error initiating call:", err);
+                setError(error.message || "Failed to initiate call");
+              }
+            }
+          },
+          onDialNumber: (event: unknown) => {
+            console.log("Dial number event:", event);
+          },
+          onCreateEngagementSucceeded: (event: unknown) => {
+            console.log("Engagement created:", event);
+            setIsCalling(true);
+            if (onCallStart) {
+              onCallStart();
+            }
+          },
+          onCreateEngagementFailed: (event: unknown) => {
+            const evt = event as { error?: string };
+            console.error("Failed to create engagement:", event);
+            setError(evt.error || "Failed to create call engagement");
+          },
+          onUpdateEngagementSucceeded: (event: unknown) => {
+            const evt = event as { engagement?: { ended?: boolean; duration?: number } };
+            console.log("Engagement updated (call may have ended):", event);
+            // When engagement is updated, the call may have ended
+            // Check if we should close the modal
+            if (isCalling && evt.engagement?.ended) {
+              setIsCalling(false);
+              const duration = evt.engagement?.duration ? Math.round(evt.engagement.duration / 1000) : undefined;
+              if (onCallEnd) {
+                onCallEnd(duration);
+              }
+            }
+          },
+          onUpdateEngagementFailed: (event: unknown) => {
+            console.error("Failed to update engagement:", event);
+          },
+          onVisibilityChanged: (event: unknown) => {
+            const evt = event as { isVisible?: boolean };
+            console.log("Visibility changed:", event);
+            if (!evt.isVisible && isCalling) {
+              // Call ended or window closed
+              setIsCalling(false);
+              if (onCallEnd) {
+                onCallEnd();
+              }
+            }
+          },
+        };
         const calling = new CallingExtensions({
           debugMode: process.env.NODE_ENV === "development",
-          eventHandlers: {
-            onReady: () => {
-              console.log("HubSpot Calling SDK ready");
-              setIsReady(true);
-              
-              // Once ready, initiate the outbound call
-              if (phoneNumber) {
-                try {
-                  calling.outboundCall({
-                    phoneNumber,
-                    createEngagement: true,
-                  });
-                } catch (err: any) {
-                  console.error("Error initiating call:", err);
-                  setError(err.message || "Failed to initiate call");
-                }
-              }
-            },
-            onDialNumber: (event: any) => {
-              console.log("Dial number event:", event);
-            },
-            onCreateEngagementSucceeded: (event: any) => {
-              console.log("Engagement created:", event);
-              setIsCalling(true);
-              if (onCallStart) {
-                onCallStart();
-              }
-            },
-            onCreateEngagementFailed: (event: any) => {
-              console.error("Failed to create engagement:", event);
-              setError(event.error || "Failed to create call engagement");
-            },
-            onUpdateEngagementSucceeded: (event: any) => {
-              console.log("Engagement updated (call may have ended):", event);
-              // When engagement is updated, the call may have ended
-              // Check if we should close the modal
-              if (isCalling && event.engagement?.ended) {
-                setIsCalling(false);
-                const duration = event.engagement?.duration ? Math.round(event.engagement.duration / 1000) : undefined;
-                if (onCallEnd) {
-                  onCallEnd(duration);
-                }
-              }
-            },
-            onUpdateEngagementFailed: (event: any) => {
-              console.error("Failed to update engagement:", event);
-            },
-            onVisibilityChanged: (event: any) => {
-              console.log("Visibility changed:", event);
-              if (!event.isVisible && isCalling) {
-                // Call ended or window closed
-                setIsCalling(false);
-                if (onCallEnd) {
-                  onCallEnd();
-                }
-              }
-            },
-          },
-        });
+          eventHandlers: eventHandlers as any,
+        }) as any;
 
         callingRef.current = calling;
         

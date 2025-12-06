@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { syncContactsFromHubspot } from "@/lib/hubspot";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
+import { UserRole } from "@prisma/client";
 
 /**
  * HubSpot Sync Contacts API
@@ -75,14 +76,14 @@ export async function POST() {
         const name = `${hubspotContact.firstName} ${hubspotContact.lastName}`.trim() || hubspotContact.email;
         
         // Determine user role
-        let userRole = "customer_admin"; // Default role
+        let userRole: UserRole = UserRole.customer_admin; // Default role
         if (isServiceTech) {
-          userRole = "service_tech";
+          userRole = UserRole.service_tech;
         } else if (hubspotContact.userRole) {
           // Use user_role property if set (e.g., "customer_admin", "customer_tech", "super_admin")
-          const validRoles = ["super_admin", "service_tech", "customer_admin", "customer_tech"];
-          if (validRoles.includes(hubspotContact.userRole)) {
-            userRole = hubspotContact.userRole;
+          const validRoles = Object.values(UserRole);
+          if (validRoles.includes(hubspotContact.userRole as UserRole)) {
+            userRole = hubspotContact.userRole as UserRole;
           }
         }
         
@@ -145,14 +146,14 @@ export async function POST() {
           
           // For service techs, verify they don't need a company
           // For customer roles, verify company exists
-          if (!isServiceTech) {
+          if (!isServiceTech && companyId) {
 
             // Verify company exists before creating user
             const company = await prisma.company.findUnique({
               where: { id: companyId },
               select: { id: true },
             });
-            
+
             if (!company) {
               throw new Error(`Company with ID ${companyId} not found in database`);
             }

@@ -89,19 +89,14 @@ export default function TicketsPage() {
   });
 
   useEffect(() => {
-    // Get current user from sessionStorage
     const userData = sessionStorage.getItem("user");
     if (userData) {
       try {
         const user = JSON.parse(userData);
-        console.log("Current user loaded:", { id: user.id, role: user.role, name: user.name });
         setCurrentUser(user);
       } catch (error) {
         console.error("Error parsing user data:", error);
-        console.warn("User data:", userData);
       }
-    } else {
-      console.warn("No user data found in sessionStorage");
     }
   }, []);
 
@@ -144,11 +139,9 @@ export default function TicketsPage() {
       }
       if (params.toString()) url += "?" + params.toString();
 
-      console.log("Fetching tickets from:", url);
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        console.log(`Received ${data.length} tickets`);
         setTickets(data);
       } else {
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
@@ -310,7 +303,7 @@ export default function TicketsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-slate-500">Loading tickets...</p>
+        <p className="text-slate-500 dark:text-slate-400">Loading tickets...</p>
       </div>
     );
   }
@@ -320,9 +313,9 @@ export default function TicketsPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tickets</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {currentUser?.role === "service_tech" 
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Tickets</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {currentUser?.role === "service_tech"
               ? "View and manage tickets assigned to you"
               : "Manage service tickets and support requests"}
           </p>
@@ -366,7 +359,7 @@ export default function TicketsPage() {
       <div className="card p-4">
         <div className="flex gap-4">
           <div>
-            <label htmlFor="filter-status" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="filter-status" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Status
             </label>
             <select
@@ -385,7 +378,7 @@ export default function TicketsPage() {
             </select>
           </div>
           <div>
-            <label htmlFor="filter-priority" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="filter-priority" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Priority
             </label>
             <select
@@ -407,11 +400,11 @@ export default function TicketsPage() {
       {/* Create Ticket Form - Only for admins */}
       {showAddForm && currentUser?.role !== "service_tech" && (
         <div className="card p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Create New Ticket</h3>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Create New Ticket</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label htmlFor="companyId" className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="companyId" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Customer *
                 </label>
                 <select
@@ -430,7 +423,7 @@ export default function TicketsPage() {
                 </select>
               </div>
               <div>
-                <label htmlFor="siteId" className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="siteId" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Site *
                 </label>
                 <select
@@ -450,7 +443,7 @@ export default function TicketsPage() {
                 </select>
               </div>
               <div>
-                <label htmlFor="machineId" className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="machineId" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Machine (Optional)
                 </label>
                 <select
@@ -471,7 +464,7 @@ export default function TicketsPage() {
             </div>
 
             <div>
-              <label htmlFor="subject" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="subject" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Subject *
               </label>
               <input
@@ -486,7 +479,7 @@ export default function TicketsPage() {
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Description
               </label>
               <textarea
@@ -501,7 +494,7 @@ export default function TicketsPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="priority" className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="priority" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Priority
                 </label>
                 <select
@@ -522,14 +515,14 @@ export default function TicketsPage() {
                     type="checkbox"
                     checked={formData.machineDown}
                     onChange={(e) => setFormData({ ...formData, machineDown: e.target.checked })}
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded mr-2"
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 dark:border-slate-600 rounded mr-2"
                   />
-                  <span className="text-sm font-medium text-slate-700">Machine is down</span>
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Machine is down</span>
                 </label>
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200">
+            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-700">
               <button
                 type="button"
                 onClick={() => setShowAddForm(false)}
@@ -552,8 +545,8 @@ export default function TicketsPage() {
       <div className="table-container overflow-x-auto">
         {tickets.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-slate-500 mb-4">
-              {currentUser?.role === "service_tech" 
+            <p className="text-slate-500 dark:text-slate-400 mb-4">
+              {currentUser?.role === "service_tech"
                 ? "No tickets assigned to you. Tickets must be assigned to you by an administrator to appear here."
                 : "No tickets found"}
             </p>
@@ -599,18 +592,18 @@ export default function TicketsPage() {
                 };
 
                 return (
-                  <tr 
+                  <tr
                     key={ticket.id}
-                    className="hover:bg-primary-50 cursor-pointer transition-colors group"
+                    className="hover:bg-primary-50 dark:hover:bg-slate-700 cursor-pointer transition-colors group"
                     onClick={() => router.push(`/admin/tickets/${ticket.id}`)}
                   >
                     <td>
-                      <div className="font-mono text-sm font-medium text-slate-900">
+                      <div className="font-mono text-sm font-medium text-slate-900 dark:text-white">
                         {ticket.ticketNumber}
                       </div>
                     </td>
                     <td>
-                      <div className="font-medium text-slate-900">{ticket.subject}</div>
+                      <div className="font-medium text-slate-900 dark:text-white">{ticket.subject}</div>
                       {ticket.machineDown && (
                         <span className="inline-block mt-1 badge badge-danger">
                           Machine Down
@@ -620,7 +613,7 @@ export default function TicketsPage() {
                     <td>
                       <Link
                         href={`/admin/customers/${ticket.company.id}`}
-                        className="text-primary-600 hover:text-primary-700"
+                        className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {ticket.company.name}
@@ -629,7 +622,7 @@ export default function TicketsPage() {
                     <td>
                       <Link
                         href={`/admin/sites/${ticket.site.id}`}
-                        className="text-slate-600 hover:text-slate-900"
+                        className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {ticket.site.name}
@@ -639,13 +632,13 @@ export default function TicketsPage() {
                       {ticket.machine ? (
                         <Link
                           href={`/admin/machines/${ticket.machine.id}`}
-                          className="text-slate-600 hover:text-slate-900"
+                          className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {ticket.machine.name}
                         </Link>
                       ) : (
-                        <span className="text-slate-400">—</span>
+                        <span className="text-slate-400 dark:text-slate-500">—</span>
                       )}
                     </td>
                     <td>
@@ -662,7 +655,7 @@ export default function TicketsPage() {
                       <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                         <Link
                           href={`/admin/tickets/${ticket.id}`}
-                          className="text-primary-600 hover:text-primary-700 font-medium underline group-hover:text-primary-700"
+                          className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium underline group-hover:text-primary-700"
                         >
                           View Details →
                         </Link>
@@ -671,7 +664,7 @@ export default function TicketsPage() {
                             href={`https://app.hubspot.com/contacts/ticket/${ticket.hubspotId}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-slate-500 hover:text-orange-600 transition-colors"
+                            className="text-slate-500 hover:text-orange-600 dark:text-slate-400 dark:hover:text-orange-400 transition-colors"
                             title="View in HubSpot"
                           >
                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

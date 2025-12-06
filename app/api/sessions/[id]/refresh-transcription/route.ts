@@ -159,10 +159,14 @@ export async function POST(
       }
       
       // List transcriptions for this recording
-      const transcriptions = await twilioClient.transcriptions.list({
-        recordingSid: recordingSid,
-        limit: 10,
+      // Note: Twilio API doesn't support filtering by recordingSid directly in list()
+      // so we fetch recent transcriptions and filter by recordingSid
+      const allTranscriptions = await twilioClient.transcriptions.list({
+        limit: 50,
       });
+      const transcriptions = allTranscriptions.filter(t =>
+        t.recordingSid === recordingSid
+      );
       
       console.log(`[Refresh Transcription] Checking ${transcriptions.length} transcriptions for recording ${recordingSid}`);
       
@@ -187,7 +191,8 @@ export async function POST(
       
       // If no completed transcription found, check if one is in progress
       if (!transcriptionText && transcriptions.length > 0) {
-        const inProgress = transcriptions.find(t => t.status === "in-progress" || t.status === "queued");
+        // Cast status to string to handle all possible Twilio statuses
+        const inProgress = transcriptions.find(t => (t.status as string) === "in-progress" || (t.status as string) === "queued");
         const failed = transcriptions.find(t => t.status === "failed");
         
         if (failed) {

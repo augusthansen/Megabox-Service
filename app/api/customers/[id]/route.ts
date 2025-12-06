@@ -168,7 +168,6 @@ export async function PATCH(
           select: {
             sites: true,
             users: true,
-            machines: true,
           },
         },
       },

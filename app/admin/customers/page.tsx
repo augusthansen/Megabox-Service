@@ -74,11 +74,10 @@ export default function CustomersPage() {
       const response = await fetch("/api/customers");
       if (response.ok) {
         const data = await response.json();
-        console.log("Fetched customers:", data);
         setCustomers(data);
       } else {
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-        console.error("Failed to fetch customers:", response.status, errorData);
+        console.error("Failed to fetch customers:", errorData);
         alert(`Failed to load customers: ${errorData.error || "Unknown error"}`);
       }
     } catch (error) {
@@ -242,7 +241,7 @@ export default function CustomersPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-slate-500">Loading customers...</p>
+          <p className="text-slate-500 dark:text-slate-400">Loading customers...</p>
         </div>
       </div>
     );
@@ -253,8 +252,8 @@ export default function CustomersPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Customers</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Customers</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Manage customer companies and pricing tiers
           </p>
         </div>
@@ -281,10 +280,10 @@ export default function CustomersPage() {
       {/* Add Customer Form */}
       {showAddForm && (
         <div className="card p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Add New Customer</h3>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Add New Customer</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Company Name *
               </label>
               <input
@@ -300,7 +299,7 @@ export default function CustomersPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Email *
                 </label>
                 <input
@@ -314,7 +313,7 @@ export default function CustomersPage() {
                 />
               </div>
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="phone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Phone Number *
                 </label>
                 <input
@@ -330,7 +329,7 @@ export default function CustomersPage() {
             </div>
 
             <div>
-              <label htmlFor="pricingTier" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="pricingTier" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Pricing Tier
               </label>
               <select
@@ -347,7 +346,7 @@ export default function CustomersPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="pricePerMachine" className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="pricePerMachine" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Price per Machine ($/month)
                 </label>
                 <input
@@ -359,7 +358,7 @@ export default function CustomersPage() {
                 />
               </div>
               <div>
-                <label htmlFor="hourlyRate" className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="hourlyRate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Hourly Rate ($/hour)
                 </label>
                 <input
@@ -373,37 +372,37 @@ export default function CustomersPage() {
             </div>
 
             {/* Contacts Section */}
-            <div className="border-t border-gray-200 pt-4 mt-4">
+            <div className="border-t border-gray-200 dark:border-slate-700 pt-4 mt-4">
               <div className="flex justify-between items-center mb-4">
-                <h4 className="text-md font-semibold text-gray-900">Contacts (Optional)</h4>
+                <h4 className="text-md font-semibold text-gray-900 dark:text-white">Contacts (Optional)</h4>
                 <button
                   type="button"
                   onClick={addContact}
-                  className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
                 >
                   + Add Contact
                 </button>
               </div>
 
               {contacts.length === 0 ? (
-                <p className="text-sm text-gray-500 italic">No contacts added. You can add contacts later from the customer detail page.</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400 italic">No contacts added. You can add contacts later from the customer detail page.</p>
               ) : (
                 <div className="space-y-4">
                   {contacts.map((contact, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div key={index} className="border border-gray-200 dark:border-slate-600 rounded-lg p-4 bg-gray-50 dark:bg-slate-700">
                       <div className="flex justify-between items-center mb-3">
-                        <h5 className="text-sm font-medium text-gray-700">Contact {index + 1}</h5>
+                        <h5 className="text-sm font-medium text-gray-700 dark:text-slate-300">Contact {index + 1}</h5>
                         <button
                           type="button"
                           onClick={() => removeContact(index)}
-                          className="text-sm text-red-600 hover:text-red-800"
+                          className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                         >
                           Remove
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">First Name</label>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">First Name</label>
                           <input
                             type="text"
                             value={contact.firstName}
@@ -413,7 +412,7 @@ export default function CustomersPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Last Name</label>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">Last Name</label>
                           <input
                             type="text"
                             value={contact.lastName}
@@ -423,7 +422,7 @@ export default function CustomersPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">Email</label>
                           <input
                             type="email"
                             value={contact.email}
@@ -433,7 +432,7 @@ export default function CustomersPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">Phone</label>
                           <input
                             type="tel"
                             value={contact.phone}
@@ -443,7 +442,7 @@ export default function CustomersPage() {
                           />
                         </div>
                         <div className="col-span-2">
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Job Title</label>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">Job Title</label>
                           <input
                             type="text"
                             value={contact.jobTitle}
@@ -460,23 +459,23 @@ export default function CustomersPage() {
             </div>
 
             {/* Existing Users Section */}
-            <div className="border-t border-gray-200 pt-4 mt-4">
+            <div className="border-t border-gray-200 dark:border-slate-700 pt-4 mt-4">
               <div className="mb-4">
-                <h4 className="text-md font-semibold text-gray-900 mb-2">Add Existing Users (Optional)</h4>
-                <p className="text-sm text-gray-500 mb-3">
+                <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-2">Add Existing Users (Optional)</h4>
+                <p className="text-sm text-gray-500 dark:text-slate-400 mb-3">
                   Select users from your system to associate with this company
                 </p>
                 {loadingUsers ? (
-                  <p className="text-sm text-gray-500">Loading users...</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">Loading users...</p>
                 ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+                  <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-slate-600 rounded-lg p-3 bg-gray-50 dark:bg-slate-700">
                     {existingUsers.length === 0 ? (
-                      <p className="text-sm text-gray-500 italic">No users available</p>
+                      <p className="text-sm text-gray-500 dark:text-slate-400 italic">No users available</p>
                     ) : (
                       existingUsers.map((user) => (
                         <label
                           key={user.id}
-                          className="flex items-center space-x-3 p-2 hover:bg-white rounded cursor-pointer"
+                          className="flex items-center space-x-3 p-2 hover:bg-white dark:hover:bg-slate-600 rounded cursor-pointer"
                         >
                           <input
                             type="checkbox"
@@ -497,20 +496,20 @@ export default function CustomersPage() {
                                 setSelectedUserIds(selectedUserIds.filter((id) => id !== user.id));
                               }
                             }}
-                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-slate-500 rounded"
                           />
                           <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-slate-400">
                               {user.email}
                               {user.company && (
-                                <span className="ml-2 text-orange-600">
+                                <span className="ml-2 text-orange-600 dark:text-orange-400">
                                   (Currently: {user.company.name})
                                 </span>
                               )}
                             </div>
                           </div>
-                          <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded">
+                          <span className="text-xs px-2 py-1 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-300 rounded">
                             {user.role.replace("_", " ")}
                           </span>
                         </label>
@@ -519,7 +518,7 @@ export default function CustomersPage() {
                   </div>
                 )}
                 {selectedUserIds.length > 0 && (
-                  <p className="mt-2 text-sm text-blue-600">
+                  <p className="mt-2 text-sm text-blue-600 dark:text-blue-400">
                     {selectedUserIds.length} user{selectedUserIds.length !== 1 ? "s" : ""} selected
                   </p>
                 )}
@@ -527,37 +526,37 @@ export default function CustomersPage() {
             </div>
 
             {/* Sites Section */}
-            <div className="border-t border-gray-200 pt-4 mt-4">
+            <div className="border-t border-gray-200 dark:border-slate-700 pt-4 mt-4">
               <div className="flex justify-between items-center mb-4">
-                <h4 className="text-md font-semibold text-gray-900">Sites (Optional)</h4>
+                <h4 className="text-md font-semibold text-gray-900 dark:text-white">Sites (Optional)</h4>
                 <button
                   type="button"
                   onClick={addSite}
-                  className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
                 >
                   + Add Site
                 </button>
               </div>
 
               {sites.length === 0 ? (
-                <p className="text-sm text-gray-500 italic">No sites added. You can add sites later from the customer detail page.</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400 italic">No sites added. You can add sites later from the customer detail page.</p>
               ) : (
                 <div className="space-y-4">
                   {sites.map((site, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div key={index} className="border border-gray-200 dark:border-slate-600 rounded-lg p-4 bg-gray-50 dark:bg-slate-700">
                       <div className="flex justify-between items-center mb-3">
-                        <h5 className="text-sm font-medium text-gray-700">Site {index + 1}</h5>
+                        <h5 className="text-sm font-medium text-gray-700 dark:text-slate-300">Site {index + 1}</h5>
                         <button
                           type="button"
                           onClick={() => removeSite(index)}
-                          className="text-sm text-red-600 hover:text-red-800"
+                          className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                         >
                           Remove
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-3 mb-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">
                             Site Name *
                           </label>
                           <input
@@ -565,57 +564,57 @@ export default function CustomersPage() {
                             required
                             value={site.name}
                             onChange={(e) => updateSite(index, "name", e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Main Office"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">
                             Address
                           </label>
                           <input
                             type="text"
                             value={site.address}
                             onChange={(e) => updateSite(index, "address", e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                             placeholder="123 Main St"
                           />
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">
                             City
                           </label>
                           <input
                             type="text"
                             value={site.city}
                             onChange={(e) => updateSite(index, "city", e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Los Angeles"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">
                             State
                           </label>
                           <input
                             type="text"
                             value={site.state}
                             onChange={(e) => updateSite(index, "state", e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                             placeholder="CA"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">
                             ZIP Code
                           </label>
                           <input
                             type="text"
                             value={site.zipCode}
                             onChange={(e) => updateSite(index, "zipCode", e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                             placeholder="90001"
                           />
                         </div>
@@ -626,7 +625,7 @@ export default function CustomersPage() {
               )}
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200">
+            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-700">
               <button
                 type="button"
                 onClick={() => {
@@ -652,7 +651,7 @@ export default function CustomersPage() {
       <div className="table-container">
         {customers.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-slate-500 mb-4">No customers yet</p>
+            <p className="text-slate-500 dark:text-slate-400 mb-4">No customers yet</p>
             <button
               onClick={() => setShowAddForm(true)}
               className="btn-primary"
@@ -676,7 +675,7 @@ export default function CustomersPage() {
               {customers.map((customer) => (
                 <tr key={customer.id}>
                   <td>
-                    <div className="font-medium text-slate-900">{customer.name}</div>
+                    <div className="font-medium text-slate-900 dark:text-white">{customer.name}</div>
                   </td>
                   <td>
                     <span className={`badge ${
@@ -687,23 +686,19 @@ export default function CustomersPage() {
                       {customer.pricingTier}
                     </span>
                   </td>
-                  <td className="text-slate-600">
+                  <td className="text-slate-600 dark:text-slate-300">
                     ${customer.pricePerMachine}/machine
                   </td>
-                  <td className="text-slate-600">
+                  <td className="text-slate-600 dark:text-slate-300">
                     ${customer.hourlyRate}/hour
                   </td>
-                  <td className="text-slate-600">
+                  <td className="text-slate-600 dark:text-slate-300">
                     {customer._count.sites} site{customer._count.sites !== 1 ? "s" : ""}
                   </td>
                   <td>
                     <Link
                       href={`/admin/customers/${customer.id}`}
-                      className="text-primary-600 hover:text-primary-700 font-medium transition-colors"
-                      onClick={(e) => {
-                        // Ensure navigation happens
-                        console.log('Navigating to customer:', customer.id);
-                      }}
+                      className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium transition-colors"
                     >
                       View Details →
                     </Link>

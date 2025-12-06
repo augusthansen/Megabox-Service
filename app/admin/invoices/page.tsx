@@ -188,8 +188,8 @@ export default function InvoicesPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Invoices</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Invoices</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Manage customer invoices and billing
           </p>
         </div>
@@ -205,7 +205,7 @@ export default function InvoicesPage() {
       <div className="card p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Filter by Company
             </label>
             <select
@@ -222,7 +222,7 @@ export default function InvoicesPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Filter by Status
             </label>
             <select
@@ -239,7 +239,7 @@ export default function InvoicesPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Filter by Billing Period
             </label>
             <select
@@ -261,11 +261,11 @@ export default function InvoicesPage() {
       {/* Create Invoice Form */}
       {showAddForm && (
         <div className="card p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
             Create New Invoice
           </h3>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <p className="text-sm text-blue-800">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+            <p className="text-sm text-blue-800 dark:text-blue-300">
               <strong>Automatic Calculation:</strong> The invoice will be
               automatically calculated based on:
               <ul className="list-disc list-inside mt-2 space-y-1">
@@ -281,7 +281,7 @@ export default function InvoicesPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Company *
                 </label>
                 <select
@@ -301,7 +301,7 @@ export default function InvoicesPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Billing Period *
                 </label>
                 <select
@@ -323,7 +323,7 @@ export default function InvoicesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Status
               </label>
               <select
@@ -373,11 +373,11 @@ export default function InvoicesPage() {
       {/* Invoices Table */}
       <div className="card overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-slate-500">
+          <div className="p-8 text-center text-slate-500 dark:text-slate-400">
             Loading invoices...
           </div>
         ) : invoices.length === 0 ? (
-          <div className="p-8 text-center text-slate-500">
+          <div className="p-8 text-center text-slate-500 dark:text-slate-400">
             No invoices found. Create your first invoice to get started.
           </div>
         ) : (
@@ -399,16 +399,16 @@ export default function InvoicesPage() {
                 {invoices.map((invoice) => (
                   <tr
                     key={invoice.id}
-                    className="cursor-pointer hover:bg-slate-50"
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700"
                     onClick={() => router.push(`/admin/invoices/${invoice.id}`)}
                   >
-                    <td className="font-medium text-slate-900">
+                    <td className="font-medium text-slate-900 dark:text-white">
                       {invoice.invoiceNumber}
                     </td>
-                    <td>{invoice.company.name}</td>
-                    <td>{formatBillingPeriod(invoice.billingPeriod)}</td>
-                    <td>{invoice.machineCount}</td>
-                    <td className="font-semibold text-slate-900">
+                    <td className="dark:text-slate-300">{invoice.company.name}</td>
+                    <td className="dark:text-slate-300">{formatBillingPeriod(invoice.billingPeriod)}</td>
+                    <td className="dark:text-slate-300">{invoice.machineCount}</td>
+                    <td className="font-semibold text-slate-900 dark:text-white">
                       {formatCurrency(invoice.totalAmount)}
                     </td>
                     <td>
@@ -419,14 +419,14 @@ export default function InvoicesPage() {
                           invoice.status.slice(1)}
                       </span>
                     </td>
-                    <td className="text-slate-500">
+                    <td className="text-slate-500 dark:text-slate-400">
                       {new Date(invoice.createdAt).toLocaleDateString()}
                     </td>
                     <td>
                       <Link
                         href={`/admin/invoices/${invoice.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="text-primary-600 hover:text-primary-700 font-medium"
+                        className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
                       >
                         View
                       </Link>

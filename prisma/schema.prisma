@@ -32,11 +32,37 @@ enum TicketStatus {
   closed
 }
 
+enum ContactMethod {
+  chat
+  phone
+  video
+}
+
+enum CallQueueStatus {
+  waiting
+  connected
+  completed
+  abandoned
+}
+
 enum TicketPriority {
   low
   medium
   high
   urgent
+}
+
+enum TicketCategory {
+  mechanical       // Jams, feeder issues, transport problems
+  electrical       // Power issues, motors, sensors
+  software         // DirectConnect, firmware, configuration
+  scanner_camera   // Barcode reading, OCR, vision system
+  network          // Remote access, network connectivity
+  consumables      // Ink, labels, envelopes
+  training         // How-to questions, guidance needed
+  preventive_maintenance  // Scheduled maintenance
+  equipment_change // New machine added or machine removed
+  other            // Doesn't fit above categories
 }
 
 enum SessionType {
@@ -220,8 +246,10 @@ model Ticket {
   assignedTo     User?          @relation("AssignedTo", fields: [assignedToId], references: [id])
   subject        String
   description    String?
+  category       TicketCategory?
   priority       TicketPriority @default(medium)
   status         TicketStatus   @default(open)
+  contactMethod  ContactMethod?
   machineDown    Boolean        @default(false)
   totalMinutes   Int            @default(0)
   totalCost      Decimal        @default(0)
@@ -229,6 +257,13 @@ model Ticket {
   travelExpenses Decimal        @default(0) // Per-ticket travel expenses
   invoiceId      String? // Link to invoice if billed
   invoice        Invoice?       @relation(fields: [invoiceId], references: [id])
+  // Resolution fields
+  resolutionNotes String?       // Tech's description of what was done to resolve
+  resolutionCategory String?    // Category of resolution (fixed, workaround, training, etc.)
+  // Customer satisfaction
+  satisfactionRating Int?       // 1-5 star rating from customer
+  satisfactionFeedback String?  // Optional feedback text from customer
+  satisfactionRatedAt DateTime? // When the rating was submitted
   createdAt      DateTime       @default(now())
   assignedAt     DateTime?
   startedAt      DateTime?
@@ -241,6 +276,9 @@ model Ticket {
   attachments           Attachment[]
   comments              Comment[]
   communicationRequests CommunicationRequest[]
+  chatMessages          ChatMessage[]
+  callQueue             CallQueue[]
+  activityLogs          TicketActivityLog[]
 
   @@index([companyId])
   @@index([siteId])
@@ -402,4 +440,293 @@ model CommunicationRequest {
   @@index([assignedToId])
   @@index([status])
   @@index([scheduledTime])
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  ticketId       String
+  ticket         Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId       String
+  content        String
+  isRead         Boolean  @default(false)
+  // File attachment fields
+  attachmentUrl  String?  // URL to the uploaded file (Supabase storage)
+  attachmentType String?  // MIME type (image/png, video/mp4, application/pdf, etc.)
+  attachmentName String?  // Original filename
+  attachmentSize Int?     // File size in bytes
+  createdAt      DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([senderId])
+}
+
+model CallQueue {
+  id               String          @id @default(cuid())
+  ticketId         String
+  ticket           Ticket          @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  customerId       String
+  techId           String?
+  position         Int
+  status           CallQueueStatus @default(waiting)
+  estimatedWait    Int? // Estimated wait in minutes
+  customerPhone    String?
+  callbackRequested Boolean        @default(false)
+  videoCallActive  Boolean         @default(false)
+  videoRoomUrl     String?
+  joinedAt         DateTime        @default(now())
+  connectedAt      DateTime?
+  completedAt      DateTime?
+  updatedAt        DateTime        @updatedAt
+
+  @@index([ticketId])
+  @@index([customerId])
+  @@index([techId])
+  @@index([status])
+}
+
+enum NotificationType {
+  ticket_assigned       // Tech assigned to a ticket
+  ticket_status_change  // Ticket status updated
+  new_chat_message      // New chat message received
+  communication_request // Customer requested call/video/chat
+  queue_update          // Queue position changed
+  ticket_created        // New ticket created
+  priority_change       // Ticket priority changed
+  ticket_resolved       // Ticket was resolved (for customer to rate)
+  system                // System announcements
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String           // User who receives the notification
+  type        NotificationType
+  title       String
+  message     String
+  link        String?          // URL to navigate to when clicked
+  ticketId    String?          // Optional reference to related ticket
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+// Activity log for tracking all changes to a ticket
+enum ActivityType {
+  created
+  status_change
+  priority_change
+  assignment_change
+  comment_added
+  chat_message
+  video_call_started
+  video_call_ended
+  phone_call_started
+  phone_call_ended
+  file_uploaded
+  resolution_added
+  satisfaction_rated
+  edited
+}
+
+model TicketActivityLog {
+  id           String       @id @default(cuid())
+  ticketId     String
+  ticket       Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  actorId      String?      // User who performed the action (null for system)
+  actorName    String       // Name of who performed action
+  activityType ActivityType
+  description  String       // Human-readable description
+  oldValue     String?      // Previous value (for changes)
+  newValue     String?      // New value (for changes)
+  metadata     Json?        // Additional data (e.g., file info, session details)
+  createdAt    DateTime     @default(now())
+
+  @@index([ticketId])
+  @@index([actorId])
+  @@index([activityType])
+  @@index([createdAt])
+}
+
+// ==========================================
+// KNOWLEDGE BASE SYSTEM
+// ==========================================
+
+// Document types for categorization
+enum DocumentType {
+  service_manual      // Full service manuals
+  parts_manual        // Parts catalogs/manuals
+  tsb                 // Technical Service Bulletins
+  quick_reference     // Quick reference guides
+  troubleshooting     // Troubleshooting guides
+  installation        // Installation guides
+  maintenance         // Maintenance schedules/procedures
+  wiring_diagram      // Electrical/wiring diagrams
+  other               // Other documents
+}
+
+// Processing status for documents
+enum ProcessingStatus {
+  pending             // Uploaded, waiting to be processed
+  processing          // Currently being processed
+  completed           // Successfully processed
+  failed              // Processing failed
+}
+
+// Uploaded documents (PDFs, manuals, etc.)
+model KnowledgeDocument {
+  id              String           @id @default(cuid())
+  title           String           // Document title
+  fileName        String           // Original filename
+  fileUrl         String           // URL to the stored file (S3/Supabase Storage)
+  fileSize        Int              // File size in bytes
+  mimeType        String           // MIME type (application/pdf, etc.)
+  documentType    DocumentType     @default(other)
+
+  // Categorization
+  manufacturer    String?          // Machine manufacturer (e.g., "Formax", "Quadient")
+  machineModel    String?          // Specific machine model
+  machineModels   String[]         // Multiple applicable models
+  category        String?          // Custom category
+  tags            String[]         // Searchable tags
+
+  // Metadata
+  description     String?          // Brief description
+  documentNumber  String?          // Official document number (if applicable)
+  revision        String?          // Document revision/version
+  documentDate    DateTime?        // Date on the document
+  pageCount       Int?             // Number of pages
+
+  // Processing
+  status          ProcessingStatus @default(pending)
+  processingError String?          // Error message if processing failed
+  processedAt     DateTime?        // When processing completed
+  totalChunks     Int?             // Total chunks to process
+  processedChunks Int?             // Chunks processed so far
+
+  // Ownership
+  uploadedById    String
+  uploadedByName  String
+  isPublished     Boolean          @default(true)
+
+  // Stats
+  viewCount       Int              @default(0)
+  downloadCount   Int              @default(0)
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relations
+  chunks          DocumentChunk[]
+
+  @@index([documentType])
+  @@index([manufacturer])
+  @@index([machineModel])
+  @@index([status])
+  @@index([isPublished])
+  @@index([tags])
+}
+
+// Document chunks for vector search (RAG)
+// Each document is split into smaller chunks for better search
+model DocumentChunk {
+  id            String            @id @default(cuid())
+  documentId    String
+  document      KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  content       String            // Text content of this chunk
+  chunkIndex    Int               // Order of chunk within document
+  pageNumber    Int?              // Page number in original document
+  heading       String?           // Section heading if available
+
+  // Vector embedding stored as JSON array (will use pgvector extension)
+  // For now storing as JSON, can migrate to vector type later
+  embedding     Json?             // OpenAI embedding vector
+  embeddingModel String?          // Model used for embedding (e.g., "text-embedding-3-small")
+
+  // Metadata for filtering
+  metadata      Json?             // Additional chunk metadata
+
+  createdAt     DateTime          @default(now())
+
+  @@index([documentId])
+  @@index([chunkIndex])
+  @@index([pageNumber])
+}
+
+// Knowledge Base chat conversations
+model KnowledgeChatSession {
+  id            String                  @id @default(cuid())
+  userId        String
+  userName      String
+  ticketId      String?                 // Optional link to a ticket
+  title         String?                 // Auto-generated title from first message
+
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  messages      KnowledgeChatMessage[]
+
+  @@index([userId])
+  @@index([ticketId])
+  @@index([createdAt])
+}
+
+// Individual chat messages
+model KnowledgeChatMessage {
+  id            String               @id @default(cuid())
+  sessionId     String
+  session       KnowledgeChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  role          String               // "user" or "assistant"
+  content       String               // Message content
+
+  // For assistant messages - source citations
+  citations     Json?                // Array of {documentId, chunkId, pageNumber, snippet}
+
+  // Feedback
+  wasHelpful    Boolean?             // User feedback on response
+
+  createdAt     DateTime             @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+// Knowledge Base for storing manual articles/solutions
+model KnowledgeBaseArticle {
+  id            String   @id @default(cuid())
+  title         String
+  slug          String   @unique // URL-friendly identifier
+  content       String   // Markdown content
+  summary       String?  // Brief summary for search results
+  category      String   // Category (e.g., "Mechanical", "Software", "Network")
+  tags          String[] // Array of tags for searching
+  machineModels String[] // Applicable machine models
+  authorId      String
+  authorName    String
+  isPublished   Boolean  @default(false)
+  viewCount     Int      @default(0)
+  helpfulCount  Int      @default(0) // Number of "this helped" clicks
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([isPublished])
+  @@index([slug])
+}
+
+// Link knowledge base articles to tickets (for suggested solutions)
+model TicketKnowledgeLink {
+  id        String   @id @default(cuid())
+  ticketId  String
+  articleId String
+  linkedById String  // Who linked this article
+  wasHelpful Boolean? // Did it help resolve the issue?
+  createdAt DateTime @default(now())
+
+  @@unique([ticketId, articleId])
+  @@index([ticketId])
+  @@index([articleId])
 }

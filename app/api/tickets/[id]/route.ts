@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateTicketInHubspot } from "@/lib/hubspot";
 import { Decimal } from "@prisma/client/runtime/library";
+import { notifyTicketAssignment, notifyTicketStatusChange, createNotification } from "@/lib/notifications";
+import {
+  logStatusChange,
+  logPriorityChange,
+  logAssignmentChange,
+  logResolutionAdded,
+  logTicketEdited,
+} from "@/lib/activity-log";
 
 /**
  * Single Ticket API Route
@@ -173,26 +181,52 @@ export async function PATCH(
       machineDown,
       escalationFees,
       travelExpenses,
+      contactMethod,
+      resolutionNotes,
+      resolutionCategory,
+      // Actor info for activity logging
+      actorId,
+      actorName,
     } = body;
 
     const updateData: any = {};
+    const changedFields: string[] = [];
 
     if (status !== undefined) updateData.status = status;
     if (priority !== undefined) updateData.priority = priority;
+    if (contactMethod !== undefined) updateData.contactMethod = contactMethod;
     if (assignedToId !== undefined) {
       updateData.assignedToId = assignedToId || null;
       if (assignedToId && !updateData.assignedAt) {
         updateData.assignedAt = new Date();
       }
     }
-    if (subject !== undefined) updateData.subject = subject;
-    if (description !== undefined) updateData.description = description;
-    if (machineDown !== undefined) updateData.machineDown = machineDown;
+    if (subject !== undefined) {
+      updateData.subject = subject;
+      changedFields.push("subject");
+    }
+    if (description !== undefined) {
+      updateData.description = description;
+      changedFields.push("description");
+    }
+    if (machineDown !== undefined) {
+      updateData.machineDown = machineDown;
+      changedFields.push("machine down status");
+    }
     if (escalationFees !== undefined) {
       updateData.escalationFees = new Decimal(escalationFees || 0);
+      changedFields.push("escalation fees");
     }
     if (travelExpenses !== undefined) {
       updateData.travelExpenses = new Decimal(travelExpenses || 0);
+      changedFields.push("travel expenses");
+    }
+    // Resolution notes and category
+    if (resolutionNotes !== undefined) {
+      updateData.resolutionNotes = resolutionNotes;
+    }
+    if (resolutionCategory !== undefined) {
+      updateData.resolutionCategory = resolutionCategory;
     }
 
     // Update timestamps based on status
@@ -206,11 +240,22 @@ export async function PATCH(
       updateData.closedAt = new Date();
     }
 
-    // Get existing ticket to check for HubSpot ID
+    // Get existing ticket to check for changes and HubSpot ID
     const existingTicket = await prisma.ticket.findUnique({
       where: { id: id },
-      select: { hubspotId: true },
+      include: {
+        company: { select: { name: true } },
+        createdBy: { select: { id: true } },
+        assignedTo: { select: { id: true, name: true } },
+      },
     });
+
+    if (!existingTicket) {
+      return NextResponse.json(
+        { error: "Ticket not found" },
+        { status: 404 }
+      );
+    }
 
     // Update ticket in HubSpot if it exists and API key is configured
     if (process.env.HUBSPOT_API_KEY && existingTicket?.hubspotId) {
@@ -261,6 +306,106 @@ export async function PATCH(
         },
       },
     });
+
+    const actor = actorName || "System";
+    const actorUserId = actorId || null;
+
+    // Log activity and send notifications for assignment changes
+    if (assignedToId !== undefined && assignedToId !== existingTicket?.assignedToId) {
+      // Get new assignee name
+      let newAssigneeName: string | null = null;
+      if (assignedToId) {
+        const newAssignee = await prisma.user.findUnique({
+          where: { id: assignedToId },
+          select: { name: true },
+        });
+        newAssigneeName = newAssignee?.name || null;
+      }
+
+      // Log assignment change
+      await logAssignmentChange(
+        id,
+        actorUserId,
+        actor,
+        existingTicket.assignedTo?.name || null,
+        newAssigneeName
+      );
+
+      // Notify the newly assigned tech
+      if (assignedToId) {
+        await notifyTicketAssignment(
+          assignedToId,
+          ticket.ticketNumber,
+          ticket.id,
+          existingTicket?.company?.name || "Unknown Company"
+        );
+      }
+    }
+
+    // Log and notify for status changes
+    if (status && status !== existingTicket?.status) {
+      // Log status change
+      await logStatusChange(id, actorUserId, actor, existingTicket.status, status);
+
+      // Notify the customer who created the ticket
+      if (existingTicket?.createdBy?.id) {
+        await notifyTicketStatusChange(
+          existingTicket.createdBy.id,
+          ticket.ticketNumber,
+          ticket.id,
+          existingTicket.status,
+          status,
+          false // customer portal
+        );
+      }
+
+      // If resolved, notify customer to rate and log resolution
+      if (status === "resolved" && existingTicket?.createdBy?.id) {
+        await createNotification({
+          userId: existingTicket.createdBy.id,
+          type: "ticket_resolved",
+          title: "Please Rate Our Service",
+          message: `Ticket #${ticket.ticketNumber} has been resolved. We'd love to hear your feedback!`,
+          link: `/customer/tickets/${ticket.id}`,
+          ticketId: ticket.id,
+        });
+
+        // Log resolution if notes provided
+        if (resolutionNotes) {
+          await logResolutionAdded(id, actorUserId, actor, resolutionCategory);
+        }
+      }
+    }
+
+    // Log and notify for priority changes
+    if (priority && priority !== existingTicket?.priority) {
+      // Log priority change
+      await logPriorityChange(id, actorUserId, actor, existingTicket.priority, priority);
+
+      // Notify assigned tech about priority change (especially urgent)
+      if (existingTicket.assignedToId) {
+        const priorityLabels: Record<string, string> = {
+          low: "Low",
+          medium: "Medium",
+          high: "High",
+          urgent: "URGENT",
+        };
+
+        await createNotification({
+          userId: existingTicket.assignedToId,
+          type: "priority_change",
+          title: priority === "urgent" ? "URGENT: Priority Changed" : "Priority Changed",
+          message: `Ticket #${ticket.ticketNumber} priority changed to ${priorityLabels[priority] || priority}`,
+          link: `/admin/tickets/${ticket.id}`,
+          ticketId: ticket.id,
+        });
+      }
+    }
+
+    // Log general edits (if other fields changed)
+    if (changedFields.length > 0 && actorUserId) {
+      await logTicketEdited(id, actorUserId, actor, changedFields);
+    }
 
     return NextResponse.json(ticket);
   } catch (error) {

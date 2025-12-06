@@ -102,6 +102,8 @@ declare global {
           email?: string;
           name?: string;
         }) => void;
+        open: () => void;
+        close: () => void;
         remove: () => void;
         status: () => { loaded: boolean };
       };

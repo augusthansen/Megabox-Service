@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import TwilioCalling from "./twilio-calling";
 
+const INITIAL_VISIBLE_COUNT = 3;
+
 interface CommunicationRequest {
   id: string;
   requestType: "video_call" | "phone_call" | "chat";
@@ -30,6 +32,7 @@ interface CommunicationRequest {
     cost: number | null;
     videoRecordingUrl: string | null;
     callRecordingUrl: string | null;
+    callRecordingSid: string | null;
     callTranscription: string | null;
     callResolutionStatus: string | null;
     notes: string | null;
@@ -52,7 +55,9 @@ export default function CommunicationRequestsManager({
 }: CommunicationRequestsManagerProps) {
   const [requests, setRequests] = useState<CommunicationRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; role: string; name: string; email: string } | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   
   useEffect(() => {
     // Get current user from sessionStorage to check role
@@ -462,6 +467,15 @@ export default function CommunicationRequestsManager({
     }
   };
 
+  // Calculate summary stats
+  const pendingCount = requests.filter(r => r.status === "pending").length;
+  const inProgressCount = requests.filter(r => r.status === "in_progress" || r.status === "scheduled" || r.status === "accepted").length;
+  const completedCount = requests.filter(r => r.status === "completed").length;
+
+  // Determine which requests to show
+  const visibleRequests = showAll ? requests : requests.slice(0, INITIAL_VISIBLE_COUNT);
+  const hasMore = requests.length > INITIAL_VISIBLE_COUNT;
+
   if (loading) {
     return <div className="text-slate-500 text-sm">Loading communication requests...</div>;
   }
@@ -476,9 +490,45 @@ export default function CommunicationRequestsManager({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-lg font-semibold text-slate-900 mb-4">Communication Requests</h3>
-      
-      {requests.map((request) => (
+      {/* Collapsible Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <div className="flex items-center gap-2">
+          <svg
+            className={`w-4 h-4 text-slate-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          <h3 className="text-sm font-semibold text-slate-900">
+            Communication Requests ({requests.length})
+          </h3>
+        </div>
+        {/* Summary badges when collapsed */}
+        {!isExpanded && (
+          <div className="flex items-center gap-2">
+            {pendingCount > 0 && (
+              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
+                {pendingCount} pending
+              </span>
+            )}
+            {inProgressCount > 0 && (
+              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                {inProgressCount} active
+              </span>
+            )}
+          </div>
+        )}
+      </button>
+
+      {/* Collapsible Content */}
+      {isExpanded && (
+        <div className="space-y-3 pt-2">
+          {visibleRequests.map((request) => (
         <div key={request.id} className="card p-4 border-l-4 border-l-primary-500">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3">
@@ -711,6 +761,32 @@ export default function CommunicationRequestsManager({
         </div>
       ))}
 
+          {/* Show More / Show Less Button */}
+          {hasMore && (
+            <button
+              onClick={() => setShowAll(!showAll)}
+              className="w-full py-2 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
+            >
+              {showAll ? (
+                <span className="flex items-center justify-center gap-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                  Show Less
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  Show {requests.length - INITIAL_VISIBLE_COUNT} More
+                </span>
+              )}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Schedule Modal */}
       {showScheduleModal && selectedRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -791,12 +867,11 @@ export default function CommunicationRequestsManager({
             }
           }}
         >
-          <div 
+          <div
             className="bg-white rounded-lg shadow-xl w-full max-w-md h-[90vh] sm:h-[80vh] flex flex-col m-2 sm:m-0 relative"
             onClick={(e) => e.stopPropagation()}
             style={{ zIndex: 10000 }}
           >
-            {console.log("🎨 Rendering TwilioCalling modal")}
             <TwilioCalling
               phoneNumber={callingPhoneNumber || modalStateRef.current.phoneNumber || ""}
               contactName={callingContactName || modalStateRef.current.contactName}

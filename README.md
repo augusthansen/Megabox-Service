@@ -5,19 +5,20 @@ Remote service management platform for mail inserter machines.
 ## Tech Stack
 
 - **Next.js 14** (App Router) - Frontend + Backend
-- **React** + **TypeScript** - UI library with type safety
+- **React 18** + **TypeScript** - UI library with type safety
 - **Tailwind CSS** - Styling
 - **Prisma** + **PostgreSQL** (Supabase) - Database
-- **NextAuth.js** - Authentication
 - **bcryptjs** - Password hashing
+- **HubSpot** - CRM & Service Hub integration
+- **Twilio** - Voice calling
+- **Daily.co** - Video calling
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js v18.20.7 or higher
+- Node.js v18 or higher
 - PostgreSQL database (Supabase recommended)
-- npm or yarn
 
 ### Installation
 
@@ -29,28 +30,24 @@ Remote service management platform for mail inserter machines.
 
 2. **Set up environment variables:**
 
+   Copy `env.example` to `.env.local` and configure:
+
    ```bash
-   cp .env.local.example .env.local
+   cp env.example .env.local
    ```
 
-   Then edit `.env.local` with your actual values:
-
-   - `DATABASE_URL` - Your Supabase PostgreSQL connection string
+   Required variables:
+   - `DATABASE_URL` - Supabase PostgreSQL connection string
    - `NEXTAUTH_SECRET` - Generate with: `openssl rand -base64 32`
-   - `HUBSPOT_API_KEY` - Your HubSpot private app token
-   - `DAILY_API_KEY` - Your Daily.co API key
+   - `HUBSPOT_API_KEY` - HubSpot private app token
+   - `TWILIO_*` - Twilio credentials (for voice calling)
+   - `DAILY_API_KEY` - Daily.co API key (for video calling)
 
 3. **Set up the database:**
 
    ```bash
-   # Push schema to database
-   npm run db:push
-
-   # Or create a migration
-   npm run db:migrate
-
-   # Seed initial admin user
-   npm run db:seed
+   npm run db:push    # Push schema to database
+   npm run db:seed    # Seed initial admin user
    ```
 
 4. **Run the development server:**
@@ -59,61 +56,66 @@ Remote service management platform for mail inserter machines.
    npm run dev
    ```
 
-5. **Open [http://localhost:3000](http://localhost:3000)** in your browser.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Initial Admin User
+## Default Admin User
 
-After seeding, you can log in with:
+After seeding, log in with:
 
 - **Email:** admin@megaboxsupply.com
 - **Password:** admin123
 
-⚠️ **IMPORTANT:** Change this password immediately after first login!
+**Change this password immediately after first login!**
 
 ## Project Structure
 
 ```
 megabox-service/
-├── app/                    # Next.js app directory
-│   ├── (auth)/            # Auth pages (login, etc.)
-│   ├── admin/             # Admin panel pages
-│   ├── customer/          # Customer portal (Phase 3)
-│   ├── tech/              # Tech dashboard (Phase 4)
+├── app/
+│   ├── (auth)/            # Login page
+│   ├── admin/             # Admin panel
+│   ├── customer/          # Customer portal
 │   └── api/               # API routes
-├── prisma/
-│   ├── schema.prisma      # Database schema
-│   └── seed.ts            # Seed data
-├── components/            # Reusable components
-├── lib/                   # Utilities
-│   ├── prisma.ts         # Prisma client
-│   └── auth.ts           # Auth helpers
-└── public/               # Static files
+├── components/            # React components
+├── lib/                   # Utilities (auth, prisma, hubspot, twilio)
+├── prisma/                # Database schema & seed
+└── docs/                  # Integration documentation
 ```
 
-## Development Phases
+## Features
 
-- **Phase 1:** Foundation & Setup (Current) ✅
-- **Phase 2:** Admin Panel
-- **Phase 3:** Customer Portal
-- **Phase 4:** Tech Dashboard
-- **Phase 5:** Billing
-- **Phase 6:** HubSpot Sync
-- **Phase 7:** Notifications
-- **Phase 8:** Reporting
+### Implemented
+- Admin dashboard with statistics
+- Customer/company management
+- Site management
+- Machine management
+- Ticket management (CRUD + HubSpot sync)
+- User management
+- HubSpot CRM integration (companies, contacts, tickets)
+- Twilio voice calling
+- Daily.co video calling
+- Customer portal
+
+### Planned
+- Invoice management & QuickBooks integration
+- Advanced reporting
+- Push notifications
 
 ## Scripts
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run db:push` - Push Prisma schema to database
-- `npm run db:migrate` - Create and run migrations
-- `npm run db:seed` - Seed database with initial data
-- `npm run db:studio` - Open Prisma Studio
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run start` | Start production server |
+| `npm run db:push` | Push Prisma schema |
+| `npm run db:seed` | Seed database |
+| `npm run db:studio` | Open Prisma Studio |
 
-## Learn More
+## Documentation
 
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Prisma Documentation](https://www.prisma.io/docs)
-- [NextAuth.js Documentation](https://next-auth.js.org)
+Integration guides are in `docs/integrations/`:
+- HubSpot setup and configuration
+- Twilio voice calling setup
+- Daily.co video calling setup
+- Ngrok tunneling for webhooks

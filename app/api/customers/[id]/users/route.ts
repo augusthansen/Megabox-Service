@@ -31,9 +31,9 @@ export async function POST(
       );
     }
 
-    const syncedContacts = [];
-    const failedContacts = [];
-    const associatedUsers = [];
+    const syncedContacts: string[] = [];
+    const failedContacts: string[] = [];
+    const associatedUsers: string[] = [];
 
     // Process in a transaction
     await prisma.$transaction(async (tx) => {
