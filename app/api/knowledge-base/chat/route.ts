@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
       userName,
       ticketId,
       documentType,
+      documentTypes, // Array of document types for filtering
       manufacturer,
       machineModel,
     } = body;
@@ -75,6 +76,7 @@ export async function POST(request: NextRequest) {
     const { response, citations } = await generateRAGResponse(message.trim(), {
       sessionId: session.id,
       documentType,
+      documentTypes, // Pass array of document types
       manufacturer,
       machineModel,
       conversationHistory,

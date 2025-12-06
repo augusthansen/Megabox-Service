@@ -38,6 +38,7 @@ interface DocumentBrowserProps {
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   service_manual: "Service Manual",
   parts_manual: "Parts Manual",
+  procedures: "Procedures",
   tsb: "Technical Service Bulletin",
   quick_reference: "Quick Reference",
   troubleshooting: "Troubleshooting Guide",
@@ -80,6 +81,24 @@ export default function DocumentBrowser({
   const [uploadDescription, setUploadDescription] = useState("");
   const [uploadTags, setUploadTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+
+  // Drag and drop state
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingOverModal, setIsDraggingOverModal] = useState(false);
+  const dragCounterRef = useRef(0);
+  const modalDragCounterRef = useRef(0);
+
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingDocument, setEditingDocument] = useState<Document | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editType, setEditType] = useState("");
+  const [editManufacturer, setEditManufacturer] = useState("");
+  const [editMachineModel, setEditMachineModel] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [editTagInput, setEditTagInput] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchDocuments();
@@ -128,6 +147,91 @@ export default function DocumentBrowser({
       }
       setUploadFile(file);
       setUploadTitle(file.name.replace(".pdf", ""));
+    }
+  };
+
+  // Handle dropped file
+  const handleFileDrop = (file: File) => {
+    if (file.type !== "application/pdf") {
+      alert("Only PDF files are allowed");
+      return;
+    }
+    setUploadFile(file);
+    setUploadTitle(file.name.replace(".pdf", ""));
+    if (!showUploadModal) {
+      setShowUploadModal(true);
+    }
+  };
+
+  // Global drag handlers (for dropping anywhere on the document browser)
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounterRef.current = 0;
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleFileDrop(files[0]);
+    }
+  };
+
+  // Modal-specific drag handlers
+  const handleModalDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    modalDragCounterRef.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDraggingOverModal(true);
+    }
+  };
+
+  const handleModalDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    modalDragCounterRef.current--;
+    if (modalDragCounterRef.current === 0) {
+      setIsDraggingOverModal(false);
+    }
+  };
+
+  const handleModalDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleModalDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOverModal(false);
+    modalDragCounterRef.current = 0;
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleFileDrop(files[0]);
     }
   };
 
@@ -234,6 +338,53 @@ export default function DocumentBrowser({
     }
   };
 
+  const openEditModal = (doc: Document) => {
+    setEditingDocument(doc);
+    setEditTitle(doc.title);
+    setEditType(doc.documentType);
+    setEditManufacturer(doc.manufacturer || "");
+    setEditMachineModel(doc.machineModel || "");
+    setEditDescription(doc.description || "");
+    setEditTags(doc.tags || []);
+    setEditTagInput("");
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDocument) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/knowledge-base/documents/${editingDocument.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editTitle,
+          documentType: editType,
+          manufacturer: editManufacturer || null,
+          machineModel: editMachineModel || null,
+          description: editDescription || null,
+          tags: editTags,
+        }),
+      });
+
+      if (response.ok) {
+        setShowEditModal(false);
+        setEditingDocument(null);
+        fetchDocuments();
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to save changes");
+      }
+    } catch (error) {
+      console.error("Error saving document:", error);
+      alert("Failed to save changes");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -259,7 +410,36 @@ export default function DocumentBrowser({
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+    <div
+      className="bg-white dark:bg-slate-800 rounded-lg shadow relative"
+      onDragEnter={canUpload ? handleDragEnter : undefined}
+      onDragLeave={canUpload ? handleDragLeave : undefined}
+      onDragOver={canUpload ? handleDragOver : undefined}
+      onDrop={canUpload ? handleDrop : undefined}
+    >
+      {/* Drag overlay */}
+      {isDragging && canUpload && (
+        <div className="absolute inset-0 bg-blue-500/20 dark:bg-blue-400/20 border-2 border-dashed border-blue-500 dark:border-blue-400 rounded-lg z-10 flex items-center justify-center">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg text-center">
+            <svg
+              className="w-12 h-12 mx-auto text-blue-500 dark:text-blue-400 mb-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
+            </svg>
+            <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">Drop PDF here to upload</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Release to open upload dialog</p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="p-4 border-b dark:border-slate-700">
         <div className="flex items-center justify-between mb-4">
@@ -479,6 +659,25 @@ export default function DocumentBrowser({
                       />
                     </svg>
                   </a>
+                  {canUpload && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditModal(doc);
+                      }}
+                      className="p-2 text-gray-400 dark:text-slate-500 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+                      title="Edit details"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </button>
+                  )}
                   {doc.status === "failed" && (
                     <button
                       onClick={(e) => {
@@ -554,10 +753,22 @@ export default function DocumentBrowser({
                 {!uploadFile ? (
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
+                    onDragEnter={handleModalDragEnter}
+                    onDragLeave={handleModalDragLeave}
+                    onDragOver={handleModalDragOver}
+                    onDrop={handleModalDrop}
+                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                      isDraggingOverModal
+                        ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20"
+                        : "border-gray-300 dark:border-slate-600 hover:border-blue-500 dark:hover:border-blue-400"
+                    }`}
                   >
                     <svg
-                      className="w-10 h-10 mx-auto text-gray-400 dark:text-slate-500 mb-2"
+                      className={`w-10 h-10 mx-auto mb-2 ${
+                        isDraggingOverModal
+                          ? "text-blue-500 dark:text-blue-400"
+                          : "text-gray-400 dark:text-slate-500"
+                      }`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -569,7 +780,9 @@ export default function DocumentBrowser({
                         d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                       />
                     </svg>
-                    <p className="text-gray-600 dark:text-slate-400">Click to select a PDF file</p>
+                    <p className={isDraggingOverModal ? "text-blue-600 dark:text-blue-400 font-medium" : "text-gray-600 dark:text-slate-400"}>
+                      {isDraggingOverModal ? "Drop PDF here" : "Drag & drop a PDF or click to select"}
+                    </p>
                     <p className="text-sm text-gray-400 dark:text-slate-500">Max 100MB</p>
                   </div>
                 ) : (
@@ -689,12 +902,16 @@ export default function DocumentBrowser({
                     <option value="DI2000">DI2000</option>
                   </optgroup>
                   <optgroup label="Software">
-                    <option value="Direct Connect">Direct Connect</option>
+                    <option value="DC & RTP">DC & RTP</option>
+                    <option value="Scanning">Scanning Software</option>
                   </optgroup>
                   <optgroup label="Modules">
                     <option value="Feeder Module">Feeder Module</option>
                     <option value="Input Module">Input Module</option>
                     <option value="Stacker Module">Stacker Module</option>
+                    <option value="Envelope Module">Envelope Module</option>
+                    <option value="Metering Module">Metering Module</option>
+                    <option value="Buckle Chute Module">Buckle Chute Module</option>
                   </optgroup>
                 </select>
               </div>
@@ -810,6 +1027,237 @@ export default function DocumentBrowser({
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {uploading ? "Uploading..." : "Upload"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && editingDocument && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b dark:border-slate-700">
+              <h3 className="text-lg font-semibold dark:text-white">Edit Document Details</h3>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingDocument(null);
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="p-4 space-y-4">
+              {/* File info (read-only) */}
+              <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
+                <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded flex items-center justify-center">
+                  <svg
+                    className="w-6 h-6 text-red-600 dark:text-red-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate dark:text-white">{editingDocument.fileName}</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    {formatFileSize(editingDocument.fileSize)} • {editingDocument.pageCount || "?"} pages
+                  </p>
+                </div>
+              </div>
+
+              {/* Title */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                  Title *
+                </label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Document Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                  Document Type *
+                </label>
+                <select
+                  value={editType}
+                  onChange={(e) => setEditType(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {Object.entries(DOCUMENT_TYPE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Manufacturer */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                  Manufacturer
+                </label>
+                <select
+                  value={editManufacturer}
+                  onChange={(e) => setEditManufacturer(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Manufacturer</option>
+                  <option value="Bluecrest">Bluecrest</option>
+                </select>
+              </div>
+
+              {/* Machine Model */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                  Machine Model
+                </label>
+                <select
+                  value={editMachineModel}
+                  onChange={(e) => setEditMachineModel(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Machine/Software/Module</option>
+                  <optgroup label="Machines">
+                    <option value="Epic">Epic</option>
+                    <option value="MPS">MPS</option>
+                    <option value="APS">APS</option>
+                    <option value="FPS">FPS</option>
+                    <option value="Flowmaster">Flowmaster</option>
+                    <option value="FPS-SD">FPS-SD</option>
+                    <option value="MSE">MSE</option>
+                    <option value="Rival">Rival</option>
+                    <option value="DI2000">DI2000</option>
+                  </optgroup>
+                  <optgroup label="Software">
+                    <option value="DC & RTP">DC & RTP</option>
+                    <option value="Scanning">Scanning Software</option>
+                  </optgroup>
+                  <optgroup label="Modules">
+                    <option value="Feeder Module">Feeder Module</option>
+                    <option value="Input Module">Input Module</option>
+                    <option value="Stacker Module">Stacker Module</option>
+                    <option value="Envelope Module">Envelope Module</option>
+                    <option value="Metering Module">Metering Module</option>
+                    <option value="Buckle Chute Module">Buckle Chute Module</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={3}
+                  placeholder="Brief description of this document..."
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                  Tags
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {editTags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 text-sm rounded-full"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => setEditTags(editTags.filter((_, i) => i !== index))}
+                        className="hover:text-blue-600 dark:hover:text-blue-300"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={editTagInput}
+                    onChange={(e) => setEditTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && editTagInput.trim()) {
+                        e.preventDefault();
+                        if (!editTags.includes(editTagInput.trim())) {
+                          setEditTags([...editTags, editTagInput.trim()]);
+                        }
+                        setEditTagInput("");
+                      }
+                    }}
+                    placeholder="Type a tag and press Enter"
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editTagInput.trim() && !editTags.includes(editTagInput.trim())) {
+                        setEditTags([...editTags, editTagInput.trim()]);
+                        setEditTagInput("");
+                      }
+                    }}
+                    className="px-3 py-2 bg-gray-100 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-500 transition-colors"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-3 pt-4 border-t dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingDocument(null);
+                  }}
+                  className="px-4 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!editTitle || saving}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {saving ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </form>

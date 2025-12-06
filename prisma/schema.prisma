@@ -557,6 +557,7 @@ model TicketActivityLog {
 enum DocumentType {
   service_manual      // Full service manuals
   parts_manual        // Parts catalogs/manuals
+  procedures          // Procedures documents
   tsb                 // Technical Service Bulletins
   quick_reference     // Quick reference guides
   troubleshooting     // Troubleshooting guides

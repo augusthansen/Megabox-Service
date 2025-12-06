@@ -243,10 +243,10 @@ export default function CommunicationRequest({
   return (
     <div className="card p-6 space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-slate-900">Request Communication</h3>
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Request Communication</h3>
         <button
           onClick={() => setShowForm(false)}
-          className="text-slate-400 hover:text-slate-600"
+          className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -257,7 +257,7 @@ export default function CommunicationRequest({
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Request Type Selection */}
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-2">
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
             Communication Type *
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -266,42 +266,42 @@ export default function CommunicationRequest({
               onClick={() => setRequestType("video_call")}
               className={`p-4 rounded-lg border-2 transition-all ${
                 requestType === "video_call"
-                  ? "border-primary-500 bg-primary-50"
-                  : "border-slate-200 hover:border-slate-300"
+                  ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30"
+                  : "border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 dark:bg-slate-700"
               }`}
             >
-              <svg className="w-6 h-6 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 mx-auto mb-2 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
-              <div className="font-medium text-sm">Video Call</div>
+              <div className="font-medium text-sm dark:text-white">Video Call</div>
             </button>
             <button
               type="button"
               onClick={() => setRequestType("phone_call")}
               className={`p-4 rounded-lg border-2 transition-all ${
                 requestType === "phone_call"
-                  ? "border-primary-500 bg-primary-50"
-                  : "border-slate-200 hover:border-slate-300"
+                  ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30"
+                  : "border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 dark:bg-slate-700"
               }`}
             >
-              <svg className="w-6 h-6 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 mx-auto mb-2 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
-              <div className="font-medium text-sm">Phone Call</div>
+              <div className="font-medium text-sm dark:text-white">Phone Call</div>
             </button>
             <button
               type="button"
               onClick={() => setRequestType("chat")}
               className={`p-4 rounded-lg border-2 transition-all ${
                 requestType === "chat"
-                  ? "border-primary-500 bg-primary-50"
-                  : "border-slate-200 hover:border-slate-300"
+                  ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30"
+                  : "border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 dark:bg-slate-700"
               }`}
             >
-              <svg className="w-6 h-6 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 mx-auto mb-2 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <div className="font-medium text-sm">Chat</div>
+              <div className="font-medium text-sm dark:text-white">Chat</div>
             </button>
           </div>
         </div>
@@ -309,7 +309,7 @@ export default function CommunicationRequest({
         {/* Phone Number (for phone calls) */}
         {requestType === "phone_call" && (
           <div>
-            <label htmlFor="phone" className="block text-sm font-semibold text-slate-700 mb-2">
+            <label htmlFor="phone" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
               Phone Number *
             </label>
             <input
@@ -321,7 +321,7 @@ export default function CommunicationRequest({
               className="input"
               placeholder="(555) 123-4567"
             />
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               The technician will call this number
             </p>
           </div>
@@ -329,7 +329,7 @@ export default function CommunicationRequest({
 
         {/* Scheduled Time (optional) */}
         <div>
-          <label htmlFor="scheduledTime" className="block text-sm font-semibold text-slate-700 mb-2">
+          <label htmlFor="scheduledTime" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
             Preferred Time (Optional)
           </label>
           <input
@@ -340,14 +340,14 @@ export default function CommunicationRequest({
             className="input"
             min={new Date().toISOString().slice(0, 16)}
           />
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Leave blank for immediate communication, or select a preferred time
           </p>
         </div>
 
         {/* Notes */}
         <div>
-          <label htmlFor="notes" className="block text-sm font-semibold text-slate-700 mb-2">
+          <label htmlFor="notes" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
             Additional Notes (Optional)
           </label>
           <textarea

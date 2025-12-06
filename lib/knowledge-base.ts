@@ -55,7 +55,7 @@ const EMBEDDING_MODEL = "text-embedding-3-small";
 const CLAUDE_MODEL = "claude-sonnet-4-20250514"; // Claude for chat responses
 const CHUNK_SIZE = 1000; // Characters per chunk
 const CHUNK_OVERLAP = 200; // Overlap between chunks for context continuity
-const MAX_SEARCH_RESULTS = 5; // Number of chunks to retrieve for context
+const MAX_SEARCH_RESULTS = 8; // Number of chunks to retrieve for context
 
 /**
  * Generate embedding for a text using OpenAI
@@ -152,13 +152,59 @@ export function cosineSimilarity(vecA: number[], vecB: number[]): number {
 }
 
 /**
- * Search for relevant document chunks using semantic search
+ * Check if query contains patterns that suggest exact match search
+ * (part numbers, error codes, specific identifiers)
+ */
+function shouldUseKeywordSearch(query: string): boolean {
+  // Patterns that suggest user is looking for specific identifiers
+  const patterns = [
+    /\b\d{3,}[-\s]?\w+\b/i,           // Numbers followed by letters (part numbers)
+    /\b[A-Z]{2,}\d{2,}\b/i,            // Letters followed by numbers (model codes)
+    /\b\d+-\d+\b/,                      // Numbers with dashes (part numbers like 123-456)
+    /\bpart\s*(number|#|no\.?)\b/i,    // "part number" or "part #"
+    /\berror\s*(code|#|no\.?)\b/i,     // "error code"
+    /\bPN\s*[:.]?\s*\w+/i,             // "PN:" followed by text
+    /\b[A-Z]{1,3}\d{4,}\b/,            // Short prefix + 4+ digits
+  ];
+
+  return patterns.some(pattern => pattern.test(query));
+}
+
+/**
+ * Extract potential identifiers (part numbers, codes) from query
+ */
+function extractIdentifiers(query: string): string[] {
+  const identifiers: string[] = [];
+
+  // Various patterns for part numbers and codes
+  const patterns = [
+    /\b(\d{3,}[-\s]?\w+)\b/gi,         // Numbers followed by letters
+    /\b([A-Z]{2,}\d{2,}[A-Z0-9]*)\b/gi, // Letters followed by numbers
+    /\b(\d+-\d+[-\d]*)\b/g,             // Numbers with dashes
+    /\b([A-Z]{1,3}\d{4,}[A-Z0-9]*)\b/gi, // Short prefix + digits
+  ];
+
+  for (const pattern of patterns) {
+    const matches = query.match(pattern);
+    if (matches) {
+      identifiers.push(...matches);
+    }
+  }
+
+  return [...new Set(identifiers)]; // Remove duplicates
+}
+
+/**
+ * Search for relevant document chunks using hybrid search
+ * Combines semantic search with keyword matching for better results
+ * on specific identifiers like part numbers and error codes
  */
 export async function searchDocuments(
   query: string,
   options: {
     limit?: number;
     documentType?: string;
+    documentTypes?: string[]; // Array of document types for filtering
     manufacturer?: string;
     machineModel?: string;
     documentIds?: string[];
@@ -172,16 +218,16 @@ export async function searchDocuments(
 > {
   const limit = options.limit || MAX_SEARCH_RESULTS;
 
-  // Generate embedding for the query
-  const queryEmbedding = await generateEmbedding(query);
-
   // Build where clause for filtering
   const documentWhere: any = {
     isPublished: true,
     status: "completed",
   };
 
-  if (options.documentType) {
+  // Support both single documentType and array of documentTypes
+  if (options.documentTypes && options.documentTypes.length > 0) {
+    documentWhere.documentType = { in: options.documentTypes };
+  } else if (options.documentType) {
     documentWhere.documentType = options.documentType;
   }
   if (options.manufacturer) {
@@ -197,9 +243,64 @@ export async function searchDocuments(
     documentWhere.id = { in: options.documentIds };
   }
 
-  // Get all chunks from matching documents
-  // Note: Using NOT equals DbNull to filter out null embeddings for Json fields
-  const chunks = await prisma.documentChunk.findMany({
+  // Check if query likely contains part numbers or specific identifiers
+  const useKeywordSearch = shouldUseKeywordSearch(query);
+  const identifiers = extractIdentifiers(query);
+
+  // HYBRID SEARCH: Combine semantic + keyword search
+  let keywordResults: { chunk: any; document: any; similarity: number }[] = [];
+
+  if (useKeywordSearch && identifiers.length > 0) {
+    console.log(`[Knowledge Search] Detected identifiers, using hybrid search: ${identifiers.join(', ')}`);
+
+    // Keyword search: Find chunks containing the exact identifiers
+    const keywordChunks = await prisma.documentChunk.findMany({
+      where: {
+        document: documentWhere,
+        OR: identifiers.map(id => ({
+          content: { contains: id, mode: 'insensitive' as const }
+        })),
+      },
+      include: {
+        document: {
+          select: {
+            id: true,
+            title: true,
+            fileName: true,
+            fileUrl: true,
+            documentType: true,
+            manufacturer: true,
+            machineModel: true,
+            pageCount: true,
+          },
+        },
+      },
+      take: limit * 2, // Get more results for better ranking
+    });
+
+    // Score keyword matches higher (boost score based on how many identifiers match)
+    keywordResults = keywordChunks.map((chunk) => {
+      const content = chunk.content.toLowerCase();
+      const matchCount = identifiers.filter(id =>
+        content.includes(id.toLowerCase())
+      ).length;
+      // Give high similarity score for keyword matches (0.85-0.95 range)
+      const similarity = 0.85 + (matchCount / identifiers.length) * 0.10;
+      return {
+        chunk,
+        document: chunk.document,
+        similarity,
+      };
+    });
+
+    console.log(`[Knowledge Search] Found ${keywordResults.length} keyword matches`);
+  }
+
+  // SEMANTIC SEARCH: Always run this for conceptual matching
+  const queryEmbedding = await generateEmbedding(query);
+
+  // Get all chunks from matching documents with embeddings
+  const semanticChunks = await prisma.documentChunk.findMany({
     where: {
       document: documentWhere,
       NOT: {
@@ -223,7 +324,7 @@ export async function searchDocuments(
   });
 
   // Calculate similarity for each chunk
-  const scoredChunks = chunks.map((chunk) => {
+  const semanticResults = semanticChunks.map((chunk) => {
     const embedding = chunk.embedding as number[];
     const similarity = cosineSimilarity(queryEmbedding, embedding);
     return {
@@ -233,9 +334,43 @@ export async function searchDocuments(
     };
   });
 
-  // Sort by similarity and return top results
-  scoredChunks.sort((a, b) => b.similarity - a.similarity);
-  return scoredChunks.slice(0, limit);
+  // MERGE RESULTS: Combine keyword and semantic results
+  // Keyword matches get priority for exact identifier searches
+  const resultMap = new Map<string, { chunk: any; document: any; similarity: number; isKeywordMatch: boolean }>();
+
+  // Track which chunks are keyword matches (these get priority)
+  const keywordChunkIds = new Set(keywordResults.map(kr => kr.chunk.id));
+
+  // Add keyword results first with boosted scores
+  for (const result of keywordResults) {
+    resultMap.set(result.chunk.id, { ...result, isKeywordMatch: true });
+  }
+
+  // Add semantic results only if not already a keyword match
+  for (const result of semanticResults) {
+    const existing = resultMap.get(result.chunk.id);
+    if (!existing) {
+      // Not a keyword match, add as semantic result
+      resultMap.set(result.chunk.id, { ...result, isKeywordMatch: false });
+    } else if (existing.isKeywordMatch) {
+      // This is ALSO a keyword match - boost its score even higher
+      existing.similarity = Math.min(0.99, existing.similarity + 0.05);
+    }
+  }
+
+  // Sort: keyword matches first (sorted by score), then semantic (sorted by score)
+  const allResults = Array.from(resultMap.values());
+  allResults.sort((a, b) => {
+    // Keyword matches always come first
+    if (a.isKeywordMatch && !b.isKeywordMatch) return -1;
+    if (!a.isKeywordMatch && b.isKeywordMatch) return 1;
+    // Within same category, sort by similarity
+    return b.similarity - a.similarity;
+  });
+
+  console.log(`[Knowledge Search] Returning ${Math.min(limit, allResults.length)} results (${keywordResults.length} keyword, ${allResults.length - keywordResults.length} semantic-only)`);
+
+  return allResults.slice(0, limit);
 }
 
 /**
@@ -246,6 +381,7 @@ export async function generateRAGResponse(
   options: {
     sessionId?: string;
     documentType?: string;
+    documentTypes?: string[]; // Array of document types for filtering
     manufacturer?: string;
     machineModel?: string;
     conversationHistory?: { role: "user" | "assistant"; content: string }[];
@@ -259,12 +395,14 @@ export async function generateRAGResponse(
     pageNumber: number | null;
     snippet: string;
     similarity: number;
+    fileUrl: string | null;
   }[];
 }> {
   // Search for relevant chunks
   const searchResults = await searchDocuments(query, {
     limit: MAX_SEARCH_RESULTS,
     documentType: options.documentType,
+    documentTypes: options.documentTypes,
     manufacturer: options.manufacturer,
     machineModel: options.machineModel,
   });
@@ -320,7 +458,7 @@ ${context || "No relevant documentation found for this query."}`;
     ? completion.content[0].text
     : "I couldn't generate a response.";
 
-  // Build citations
+  // Build citations with file URL for "View in PDF" functionality
   const citations = searchResults.map((result) => ({
     documentId: result.document.id,
     documentTitle: result.document.title,
@@ -328,6 +466,7 @@ ${context || "No relevant documentation found for this query."}`;
     pageNumber: result.chunk.pageNumber,
     snippet: result.chunk.content.slice(0, 200) + "...",
     similarity: result.similarity,
+    fileUrl: result.document.fileUrl, // Include PDF URL for viewing
   }));
 
   return { response, citations };

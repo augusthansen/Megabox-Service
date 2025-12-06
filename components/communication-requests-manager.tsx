@@ -434,13 +434,13 @@ export default function CommunicationRequestsManager({
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
-      accepted: "bg-blue-100 text-blue-700 border-blue-200",
-      scheduled: "bg-purple-100 text-purple-700 border-purple-200",
-      in_progress: "bg-green-100 text-green-700 border-green-200",
-      completed: "bg-slate-100 text-slate-700 border-slate-200",
-      declined: "bg-red-100 text-red-700 border-red-200",
-      cancelled: "bg-gray-100 text-gray-700 border-gray-200",
+      pending: "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-700",
+      accepted: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700",
+      scheduled: "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-700",
+      in_progress: "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700",
+      completed: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-600 dark:text-slate-300 dark:border-slate-500",
+      declined: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700",
+      cancelled: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600",
     };
     return badges[status] || badges.pending;
   };
@@ -477,12 +477,12 @@ export default function CommunicationRequestsManager({
   const hasMore = requests.length > INITIAL_VISIBLE_COUNT;
 
   if (loading) {
-    return <div className="text-slate-500 text-sm">Loading communication requests...</div>;
+    return <div className="text-slate-500 dark:text-slate-400 text-sm">Loading communication requests...</div>;
   }
 
   if (requests.length === 0) {
     return (
-      <div className="text-center py-4 text-slate-500 text-sm">
+      <div className="text-center py-4 text-slate-500 dark:text-slate-400 text-sm">
         No communication requests for this ticket
       </div>
     );
@@ -497,14 +497,14 @@ export default function CommunicationRequestsManager({
       >
         <div className="flex items-center gap-2">
           <svg
-            className={`w-4 h-4 text-slate-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+            className={`w-4 h-4 text-slate-500 dark:text-slate-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
-          <h3 className="text-sm font-semibold text-slate-900">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
             Communication Requests ({requests.length})
           </h3>
         </div>
@@ -512,12 +512,12 @@ export default function CommunicationRequestsManager({
         {!isExpanded && (
           <div className="flex items-center gap-2">
             {pendingCount > 0 && (
-              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
+              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
                 {pendingCount} pending
               </span>
             )}
             {inProgressCount > 0 && (
-              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">
+              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                 {inProgressCount} active
               </span>
             )}
@@ -529,15 +529,15 @@ export default function CommunicationRequestsManager({
       {isExpanded && (
         <div className="space-y-3 pt-2">
           {visibleRequests.map((request) => (
-        <div key={request.id} className="card p-4 border-l-4 border-l-primary-500">
+        <div key={request.id} className="card p-4 border-l-4 border-l-primary-500 dark:bg-slate-700 dark:border-slate-600">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3">
-              <div className="text-primary-600">{getTypeIcon(request.requestType)}</div>
+              <div className="text-primary-600 dark:text-primary-400">{getTypeIcon(request.requestType)}</div>
               <div>
-                <div className="font-semibold text-slate-900 capitalize">
+                <div className="font-semibold text-slate-900 dark:text-white capitalize">
                   {request.requestType.replace("_", " ")} Request
                 </div>
-                <div className="text-sm text-slate-600">
+                <div className="text-sm text-slate-600 dark:text-slate-300">
                   From: {request.requestedBy.name}
                 </div>
               </div>
@@ -548,67 +548,67 @@ export default function CommunicationRequestsManager({
           </div>
 
           {request.scheduledTime && (
-            <div className="text-sm text-slate-600 mb-2">
+            <div className="text-sm text-slate-600 dark:text-slate-300 mb-2">
               <strong>Scheduled:</strong> {new Date(request.scheduledTime).toLocaleString()}
             </div>
           )}
 
           {request.customerPhone && (
-            <div className="text-sm text-slate-600 mb-2">
+            <div className="text-sm text-slate-600 dark:text-slate-300 mb-2">
               <strong>Phone:</strong> {request.customerPhone}
             </div>
           )}
 
           {request.notes && (
-            <div className="text-sm text-slate-600 mb-2">
+            <div className="text-sm text-slate-600 dark:text-slate-300 mb-2">
               <strong>Notes:</strong> {request.notes}
             </div>
           )}
 
           {/* Call Details (for completed phone calls) - Only show for service_tech and super_admin */}
-          {request.requestType === "phone_call" && 
-           request.status === "completed" && 
-           currentUser && 
+          {request.requestType === "phone_call" &&
+           request.status === "completed" &&
+           currentUser &&
            (currentUser.role === "service_tech" || currentUser.role === "super_admin") && (
-            <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
-              <h4 className="font-semibold text-slate-900 mb-2">Call Details</h4>
-              
+            <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-600 rounded-lg border border-slate-200 dark:border-slate-500">
+              <h4 className="font-semibold text-slate-900 dark:text-white mb-2">Call Details</h4>
+
               {!request.session ? (
-                <div className="text-sm text-slate-500 italic">
+                <div className="text-sm text-slate-500 dark:text-slate-400 italic">
                   Session data is being processed...
                 </div>
               ) : (
               <div className="space-y-2 text-sm">
                 {request.session.durationMinutes !== null && (
                   <div className="flex justify-between">
-                    <span className="text-slate-600">Duration:</span>
-                    <span className="font-medium text-slate-900">{request.session.durationMinutes} minutes</span>
+                    <span className="text-slate-600 dark:text-slate-300">Duration:</span>
+                    <span className="font-medium text-slate-900 dark:text-white">{request.session.durationMinutes} minutes</span>
                   </div>
                 )}
-                
+
                 {request.session.cost !== null && currentUser?.role === "super_admin" && (
                   <div className="flex justify-between">
-                    <span className="text-slate-600">Cost:</span>
-                    <span className="font-medium text-slate-900">${Number(request.session.cost).toFixed(2)}</span>
+                    <span className="text-slate-600 dark:text-slate-300">Cost:</span>
+                    <span className="font-medium text-slate-900 dark:text-white">${Number(request.session.cost).toFixed(2)}</span>
                   </div>
                 )}
-                
+
                 {/* Call Recording Player - Show when recording is available */}
                 {request.session?.callRecordingUrl && request.session?.callRecordingSid && (
-                  <div className="mt-2 pt-2 border-t border-slate-200">
+                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-500">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-slate-600 font-semibold">Call Recording:</span>
+                      <span className="text-slate-600 dark:text-slate-300 font-semibold">Call Recording:</span>
                       <a
                         href={`/api/twilio/recording/${request.session.callRecordingSid}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         download
-                        className="text-primary-600 hover:text-primary-700 underline text-xs"
+                        className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 underline text-xs"
                       >
                         Download
                       </a>
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                    <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3 border border-slate-200 dark:border-slate-500">
                       <audio
                         controls
                         className="w-full"
@@ -620,18 +620,18 @@ export default function CommunicationRequestsManager({
                     </div>
                   </div>
                 )}
-                
+
                 {/* Show message if recording is processing */}
                 {!request.session?.callRecordingUrl && request.session?.callRecordingSid && (
-                  <div className="mt-2 pt-2 border-t border-slate-200">
-                    <div className="text-xs text-slate-500 italic">
+                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-500">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 italic">
                       Recording is being processed. It will appear here automatically when ready (usually 1-2 minutes after call ends).
                     </div>
                   </div>
                 )}
-                
-                <div className="mt-3 pt-3 border-t border-slate-200">
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+
+                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-500">
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                     Resolution Status:
                   </label>
                   <select
@@ -648,7 +648,7 @@ export default function CommunicationRequestsManager({
                             callResolutionStatus: newStatus || null,
                           }),
                         });
-                        
+
                         if (response.ok) {
                           fetchRequests();
                           if (onRequestUpdated) {
@@ -671,11 +671,11 @@ export default function CommunicationRequestsManager({
                     <option value="needs_followup">Needs Follow-up</option>
                   </select>
                 </div>
-                
+
                 {request.session.notes && (
                   <div className="mt-2">
-                    <div className="text-slate-600 mb-1">Session Notes:</div>
-                    <div className="bg-white p-2 rounded border border-slate-200 text-xs text-slate-700">
+                    <div className="text-slate-600 dark:text-slate-300 mb-1">Session Notes:</div>
+                    <div className="bg-white dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-600 text-xs text-slate-700 dark:text-slate-300">
                       {request.session.notes}
                     </div>
                   </div>
@@ -790,12 +790,12 @@ export default function CommunicationRequestsManager({
       {/* Schedule Modal */}
       {showScheduleModal && selectedRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">Schedule {selectedRequest.requestType.replace("_", " ")}</h3>
-            
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Schedule {selectedRequest.requestType.replace("_", " ")}</h3>
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                   Scheduled Time *
                 </label>
                 <input
@@ -809,7 +809,7 @@ export default function CommunicationRequestsManager({
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                   Notes (Optional)
                 </label>
                 <textarea
