@@ -176,7 +176,7 @@ model Site {
   // Relations
   machines         Machine[]
   tickets          Ticket[]
-  floorMaps        FloorMap[]
+  floorPlan        FloorPlan?
   invoiceLineItems InvoiceLineItem[]
 
   @@index([companyId])
@@ -207,8 +207,9 @@ model Machine {
   updatedAt            DateTime @updatedAt
 
   // Relations
-  alarms  MachineAlarm[]
-  tickets Ticket[]
+  alarms           MachineAlarm[]
+  tickets          Ticket[]
+  floorPlanPosition MachinePosition?
 
   @@index([siteId])
   @@index([serialNumber])
@@ -400,18 +401,85 @@ model InvoiceLineItem {
   @@index([siteId])
 }
 
-model FloorMap {
-  id        String   @id @default(cuid())
-  siteId    String
-  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  name      String
-  imageUrl  String
-  width     Int
-  height    Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model FloorPlan {
+  id              String   @id @default(cuid())
+  siteId          String   @unique  // One floor plan per site
+  site            Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  name            String   @default("Main Floor")
+  width           Int      @default(1200)
+  height          Int      @default(800)
+  gridSize        Int      @default(25)  // Snap-to-grid size
+  backgroundColor String   @default("#f5f5f5")
+  showGrid        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  machinePositions MachinePosition[]
+  textLabels       FloorPlanLabel[]
 
   @@index([siteId])
+}
+
+// Text labels for floor plans
+model FloorPlanLabel {
+  id          String    @id @default(cuid())
+  floorPlanId String
+  floorPlan   FloorPlan @relation(fields: [floorPlanId], references: [id], onDelete: Cascade)
+  text        String
+  x           Float
+  y           Float
+  fontSize    Int       @default(16)
+  fontWeight  String    @default("normal")  // "normal" or "bold"
+  color       String    @default("#374151")  // Text color
+  rotation    Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([floorPlanId])
+}
+
+model MachinePosition {
+  id          String    @id @default(cuid())
+  floorPlanId String
+  floorPlan   FloorPlan @relation(fields: [floorPlanId], references: [id], onDelete: Cascade)
+  machineId   String    @unique
+  machine     Machine   @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  x           Float
+  y           Float
+  width       Float     @default(120)
+  height      Float     @default(80)
+  rotation    Float     @default(0)
+  label       String?   // Optional custom label
+  shapeId     String?   // Custom shape to use
+  shape       MachineShape? @relation(fields: [shapeId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([floorPlanId, machineId])  // Each machine only once per floor plan
+  @@index([floorPlanId])
+  @@index([machineId])
+  @@index([shapeId])
+}
+
+// Custom machine shapes for floor plans
+model MachineShape {
+  id          String   @id @default(cuid())
+  name        String   // Display name (e.g., "Bluecrest Elevate")
+  points      Json     // Array of {x, y} normalized points (0-1 range)
+  inputArrow  Json?    // {x, y, direction} for input flow arrow
+  outputArrow Json?    // {x, y, direction} for output flow arrow
+  color       String   @default("#06b6d4")  // Shape color (hex)
+  isDefault   Boolean  @default(false)  // If true, this is a system default shape
+  createdById String?  // User who created it (null for system defaults)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  machinePositions MachinePosition[]
+
+  @@index([name])
+  @@index([isDefault])
 }
 
 model CommunicationRequest {
