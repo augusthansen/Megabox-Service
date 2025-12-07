@@ -1,308 +1,133 @@
-# Session Handoff - Megabox Service Platform
-
-## Quick Start for New Chat
-
-**Project Location:** `/Users/augusthansen/Documents/Programs/Megabox Service App/megabox-service`
-
-**Dev Server:** `npm run dev` (runs on port 3000 or 3001)
-
-**Database:** Supabase PostgreSQL with Prisma ORM
-
-**Recent Commit:** `0556842` - Knowledge base enhancements
-
----
+# Session Handoff Document
 
 ## Project Overview
+**Megabox Service Platform** - A Next.js 14 application for managing mail inserter machines, service tickets, and customer relationships. Built with TypeScript, Prisma ORM, PostgreSQL (Supabase), and Tailwind CSS.
 
-A comprehensive remote service management platform for mail inserter machines (Bluecrest equipment). Built with Next.js 14 (App Router), TypeScript, Tailwind CSS, Prisma, and PostgreSQL (Supabase).
+## Recent Session Summary (Floor Plan Feature)
 
-### Key Integrations
-- **HubSpot CRM** - Customer/company sync, ticket sync (bidirectional)
-- **Twilio** - Phone calling with recording and transcription
-- **OpenAI** - Embeddings for knowledge base semantic search
-- **Anthropic Claude** - AI chat responses in knowledge base
-- **Supabase Storage** - File/document storage
-- **Daily.co** - Video calling (configured)
+### What Was Built
 
----
+#### 1. Interactive Floor Plan System
+A complete floor plan feature for visualizing and managing machine layouts at customer facilities.
 
-## Recent Session Work (December 2024)
+**Key Files:**
+- `components/floor-plan/FloorPlanCanvas.tsx` - Main floor plan component with edit mode
+- `components/floor-plan/KonvaCanvas.tsx` - React-Konva canvas renderer for machines/labels
+- `components/floor-plan/ShapeEditor.tsx` - Custom polygon shape drawing tool
+- `components/floor-plan/MachineDetailModal.tsx` - Machine info popup with shape/rotation controls
+- `components/floor-plan/MachinePalette.tsx` - Sidebar for adding unplaced machines
 
-### Knowledge Base AI System - Major Feature
+**Features Implemented:**
+- Drag-and-drop machine placement with grid snapping (25px default)
+- Custom machine shape editor with polygon drawing
+- Uniform scaling to preserve shape aspect ratios when saving/loading
+- Rotation controls (0-360 degrees with 90° quick buttons)
+- Text labels with customizable font size, weight, and color
+- Zoom controls (25%-300%) with Ctrl+scroll support
+- Dark mode support with barely visible grid lines
+- Real-time saving to database
 
-The knowledge base allows uploading PDF manuals and using AI to search and answer questions about them.
+#### 2. Customer Facilities Portal
+Customer-facing pages to view their facilities and floor plans.
 
-#### Key Components:
+**Key Files:**
+- `app/customer/facilities/page.tsx` - List of customer's facilities
+- `app/customer/facilities/[id]/page.tsx` - Facility detail with read-only floor plan
+- `app/api/customer/sites/route.ts` - API for customer's sites with machine stats
 
-1. **`/components/knowledge-base/KnowledgeChat.tsx`** - AI chat interface
-   - Guided filtering with document category buttons (Operator, Service, Parts, TSB/Wiring)
-   - Machine/module category dropdowns
-   - Real-time streaming responses
-   - Citation display with page numbers
+#### 3. API Endpoints
+- `GET/POST /api/floor-plans/[siteId]` - Floor plan CRUD
+- `POST/PUT/DELETE /api/floor-plans/[siteId]/positions` - Machine positions
+- `POST/PUT/DELETE /api/floor-plans/[siteId]/labels` - Text labels
+- `GET/POST /api/machine-shapes` - Custom shape management
+- `GET/PUT/DELETE /api/machine-shapes/[id]` - Individual shape operations
 
-2. **`/components/knowledge-base/DocumentBrowser.tsx`** - Document management
-   - Upload PDFs with drag-and-drop
-   - Edit document metadata after upload
-   - Filter by type/status
-   - Reprocess failed documents
+#### 4. Database Schema Updates
+Added to `prisma/schema.prisma`:
+- `FloorPlan` - Canvas dimensions, grid settings, background color
+- `MachinePosition` - x, y, width, height, rotation, shapeId
+- `MachineShape` - Custom polygon shapes with points, arrows, colors
+- `FloorPlanLabel` - Text annotations with styling
 
-3. **`/lib/knowledge-base.ts`** - Core RAG implementation
-   - PDF parsing with pdf-parse
-   - Text chunking with overlap
-   - OpenAI embeddings (text-embedding-3-small)
-   - Hybrid search: semantic + keyword matching for part numbers
-   - Claude AI for response generation
+### Technical Details
 
-4. **`/app/api/knowledge-base/`** - API routes
-   - `/upload` - Upload PDFs
-   - `/documents` - List/manage documents
-   - `/documents/[id]` - Get/update/delete single document
-   - `/chat` - AI chat endpoint
-   - `/search` - Search documents
-   - `/stats` - Knowledge base statistics
+**Shape Normalization:**
+Shapes are stored with normalized 0-1 coordinates using uniform scaling (based on the larger dimension) to preserve aspect ratios. When rendering, shapes are scaled uniformly using `Math.min(width, height)`.
 
-#### Machine/Module Categories (synchronized across components):
+**Grid Snapping:**
+- Floor plan canvas: 25px grid (configurable)
+- Shape editor: 20px grid
+- Snapping happens in real-time during drag via `dragBoundFunc`
 
-**Inserter Systems:**
-- Epic, MPS, FPS, FPS-SD, Flowmaster, Rival, APS, MSE, DI2000
+**Dependencies Added:**
+- `react-konva` - Canvas rendering
+- `konva` - Canvas library
 
-**Software:**
-- DC & RTP (formerly "Direct Connect")
-- Scanning Software
+### UI Updates
+- Changed Customers icon in admin sidebar to people group icon
+- Added "Facilities" link to customer navigation (desktop and mobile)
+- Facilities admin page for super admins
 
-**Modules:**
-- Feeder Module
-- Input Module
-- Stacker Module
-- Envelope Module
-- Metering Module
-- Buckle Chute Module
-
-#### Document Types (Prisma enum):
-```
-service_manual, parts_manual, procedures, tsb, quick_reference,
-troubleshooting, installation, maintenance, wiring_diagram, other
-```
-
----
-
-## Project Structure
+## Codebase Structure
 
 ```
 megabox-service/
 ├── app/
-│   ├── (auth)/login/           # Login page
-│   ├── admin/                  # Admin dashboard
-│   │   ├── page.tsx            # Dashboard with stats
-│   │   ├── customers/          # Customer management
-│   │   ├── sites/              # Site management
-│   │   ├── machines/           # Machine management
-│   │   ├── tickets/            # Ticket management
-│   │   ├── users/              # User management
-│   │   ├── invoices/           # Invoice management
-│   │   ├── knowledge-base/     # Knowledge base admin
-│   │   ├── queue/              # Phone queue management
-│   │   └── settings/           # Settings page
-│   ├── customer/               # Customer portal
-│   │   ├── page.tsx            # Customer dashboard
-│   │   ├── tickets/            # View/create tickets
-│   │   ├── machines/           # View machines
-│   │   └── settings/           # Customer settings
-│   └── api/                    # API routes
-│       ├── login/              # Authentication
-│       ├── customers/          # Customer CRUD
-│       ├── sites/              # Site CRUD
-│       ├── machines/           # Machine CRUD
-│       ├── tickets/            # Ticket CRUD
-│       ├── users/              # User CRUD
-│       ├── invoices/           # Invoice CRUD
-│       ├── hubspot/            # HubSpot sync
-│       ├── twilio/             # Twilio webhooks
-│       ├── knowledge-base/     # Knowledge base API
-│       ├── notifications/      # Notification system
-│       ├── queue/              # Call queue
-│       ├── chat/               # Ticket chat
-│       └── sessions/           # Session management
+│   ├── admin/           # Super admin pages
+│   │   ├── facilities/  # Facility management (NEW)
+│   │   ├── customers/
+│   │   ├── machines/
+│   │   ├── sites/       # Simplified, uses FloorPlanCanvas
+│   │   └── tickets/
+│   ├── customer/        # Customer portal
+│   │   ├── facilities/  # Customer facilities view (NEW)
+│   │   └── dashboard/
+│   └── api/
+│       ├── floor-plans/ # Floor plan APIs (NEW)
+│       ├── machine-shapes/ # Shape APIs (NEW)
+│       ├── customer/    # Customer-specific APIs (NEW)
+│       └── ...
 ├── components/
+│   ├── floor-plan/      # Floor plan components (NEW)
 │   ├── admin/
-│   │   ├── sidebar.tsx         # Admin navigation
-│   │   └── top-bar.tsx         # Top bar with notifications
-│   ├── knowledge-base/
-│   │   ├── KnowledgeChat.tsx   # AI chat interface
-│   │   └── DocumentBrowser.tsx # Document management
-│   ├── notifications/
-│   │   └── NotificationBell.tsx
-│   ├── queue/
-│   │   └── PhoneQueueStatus.tsx
 │   ├── chat/
-│   │   └── ChatWindow.tsx      # Ticket chat
-│   ├── twilio-calling.tsx      # Phone calling
-│   ├── video-call.tsx          # Video calling
-│   └── communication-*.tsx     # Communication requests
+│   └── ...
 ├── lib/
-│   ├── prisma.ts               # Prisma client
-│   ├── auth.ts                 # Password hashing
-│   ├── hubspot.ts              # HubSpot integration
-│   ├── twilio.ts               # Twilio integration
-│   ├── knowledge-base.ts       # RAG system
-│   ├── notifications.ts        # Notification helpers
-│   ├── activity-log.ts         # Activity logging
-│   ├── supabase.ts             # Supabase client
-│   ├── daily.ts                # Daily.co video
-│   └── theme-context.tsx       # Dark mode context
-├── prisma/
-│   └── schema.prisma           # Database schema
-└── docs/                       # Documentation
+│   ├── prisma.ts
+│   ├── auth-config.ts
+│   └── ...
+└── prisma/
+    └── schema.prisma    # Updated with floor plan models
 ```
 
----
+## Known State
 
-## Database Schema (Key Models)
+### What Works
+- Floor plan creation and editing
+- Custom shape drawing with polygon editor
+- Machine placement with drag-and-drop
+- Rotation controls for machines
+- Text label creation and editing
+- Grid snapping for all elements
+- Zoom and pan functionality
+- Customer facilities view (read-only)
+- Dark mode support throughout
 
-### Core Business:
-- **User** - super_admin, customer_admin, customer_tech, service_tech
-- **Company** - Customer companies with pricing tiers
-- **Site** - Physical locations
-- **Machine** - Mail inserter machines
-- **Ticket** - Service tickets with categories, priorities, status
-- **Session** - Remote support sessions with recordings
-- **Invoice** - Billing with line items
+### Potential Improvements
+- Add undo/redo for floor plan edits
+- Add copy/paste for machines
+- Add ruler/measurement tools
+- Export floor plan as image
+- Import floor plan from image
 
-### Communication:
-- **CommunicationRequest** - Video/phone/chat requests
-- **ChatMessage** - Real-time ticket chat
-- **CallQueue** - Phone queue management
-- **Notification** - In-app notifications
-
-### Knowledge Base:
-- **KnowledgeDocument** - Uploaded PDFs with metadata
-- **DocumentChunk** - Text chunks with embeddings
-- **KnowledgeChatSession** - Chat sessions
-- **KnowledgeChatMessage** - Chat messages with citations
-- **KnowledgeBaseArticle** - Manual articles (for future use)
-
----
-
-## Environment Variables
-
-```env
-# Database
-DATABASE_URL="postgresql://..."
-
-# Supabase
-SUPABASE_URL="https://xxx.supabase.co"
-SUPABASE_SERVICE_ROLE_KEY="..."
-
-# HubSpot
-HUBSPOT_API_KEY="..."
-
-# Twilio
-TWILIO_ACCOUNT_SID="..."
-TWILIO_AUTH_TOKEN="..."
-TWILIO_PHONE_NUMBER="+1..."
-
-# AI
-OPENAI_API_KEY="..."        # For embeddings
-ANTHROPIC_API_KEY="..."     # For Claude chat
-
-# Daily.co (video)
-DAILY_API_KEY="..."
-
-# NextAuth (legacy)
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="..."
-```
-
----
-
-## Current Status & Known Issues
-
-### Working Features:
-- Admin dashboard with stats
-- Customer/Site/Machine/Ticket CRUD
-- HubSpot bidirectional sync
-- Twilio phone calling with recording
-- Knowledge base with AI chat
-- Document upload and processing
-- Notifications system
-- Dark mode
-
-### Known Issues:
-1. **Authentication** - Uses sessionStorage (not production-ready)
-2. **HubSpot Sync** - Limited to 100 records (no pagination)
-3. **Some `any` types** - Could use better TypeScript types
-
----
-
-## Recent Changes (This Session)
-
-1. **Knowledge Base Guided Filtering**
-   - Added document category buttons (Operator, Service, Parts, TSB/Wiring)
-   - Added machine/module category dropdowns
-   - Categories map to specific document types for filtering
-
-2. **Hybrid Search Implementation**
-   - Combines semantic search (embeddings) with keyword matching
-   - Detects part numbers and error codes automatically
-   - Prioritizes exact matches for specific identifiers
-
-3. **Document Edit Modal**
-   - Can now edit PDF metadata after upload
-   - Title, type, manufacturer, machine model, description, tags
-
-4. **Module/Machine Updates**
-   - Renamed "Direct Connect" to "DC & RTP"
-   - Added Metering Module, Buckle Chute Module, Envelope Module
-   - Added "procedures" document type to Prisma enum
-
-5. **Bug Fixes**
-   - Fixed Prisma upload error (missing procedures enum)
-   - Synchronized module lists across all components
-
----
-
-## Common Commands
-
+## Environment Setup
 ```bash
-# Development
-npm run dev              # Start dev server
-
-# Database
-npx prisma db push       # Push schema changes
-npx prisma generate      # Regenerate client
-npx prisma studio        # Open Prisma Studio
-npm run db:seed          # Seed database
-
-# Build
-npm run build            # Build for production
+cd megabox-service
+npm install
+npx prisma generate
+npx prisma db push  # If schema changed
+npm run dev
 ```
 
----
-
-## Login Credentials
-
-**Admin:** admin@megaboxsupply.com / admin123
-
----
-
-## Files to Reference First
-
-When starting a new task, these files give the best context:
-
-1. **`prisma/schema.prisma`** - Complete database schema
-2. **`PROJECT_HANDOFF.md`** - Full project overview
-3. **`lib/knowledge-base.ts`** - Knowledge base implementation
-4. **`components/knowledge-base/KnowledgeChat.tsx`** - AI chat UI
-5. **`components/knowledge-base/DocumentBrowser.tsx`** - Document management
-6. **`app/admin/layout.tsx`** - Admin layout and auth check
-
----
-
-## Next Potential Tasks
-
-1. Add more machine models to the lists
-2. Improve knowledge base search accuracy
-3. Add customer portal knowledge base access
-4. Implement proper authentication (JWT/sessions)
-5. Add HubSpot pagination for large syncs
-6. Customer satisfaction surveys after ticket resolution
+## Git Status
+All changes committed and pushed to `main` branch.
